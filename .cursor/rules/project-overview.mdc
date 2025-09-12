@@ -1,0 +1,39 @@
+---
+alwaysApply: true
+description: GhostMesh project overview and architecture
+---
+
+# GhostMesh — Edge AI Security Copilot
+
+GhostMesh is an edge-resident security copilot for industrial/IoT environments that:
+- Ingests device signals via OPC UA
+- Normalizes them to MQTT topics
+- Detects anomalies in real-time using z-score analysis
+- Explains risks in plain language via LLM
+- Enforces policy actions (throttle/isolate/unblock)
+
+## Key Architecture Components
+
+**Data Flow:** OPC UA → MQTT → AI Detection → Explanation → Policy Action
+
+**Core Services:**
+- **OPC UA → MQTT Gateway** ([opcua2mqtt/](mdc:opcua2mqtt/)): Subscribes to OPC UA nodes, publishes to MQTT
+- **MQTT Broker** ([mosquitto/](mdc:mosquitto/)): Mosquitto with user authentication and ACLs
+- **Anomaly Detector** ([anomaly/](mdc:anomaly/)): Rolling z-score detection over 120s windows
+- **AI Explainer** ([explainer/](mdc:explainer/)): Local LLM or API for alert explanations
+- **Policy Engine** ([policy/](mdc:policy/)): Enforces isolate/throttle/unblock actions
+- **Dashboard** ([dashboard/](mdc:dashboard/)): Streamlit UI for monitoring and control
+
+**MQTT Topics:**
+- Telemetry: `factory/<line>/<asset>/<signal>`
+- Alerts: `alerts/<asset>/<signal>`
+- Explanations: `explanations/<alertId>`
+- Control: `control/<asset>/<command>`
+- Audit: `audit/actions`
+
+## Target Platform
+- **Hardware:** Raspberry Pi 5 (8GB) + 1TB SSD
+- **Tech Stack:** Python, Docker Compose, Mosquitto, Streamlit
+- **Deployment:** Containerized services with docker-compose
+
+See [Architecture.md](mdc:docs/Architecture.md) and [Implementation_Plan.md](mdc:docs/Implementation_Plan.md) for detailed specifications.

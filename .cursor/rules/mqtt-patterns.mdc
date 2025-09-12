@@ -1,0 +1,101 @@
+---
+description: MQTT topic patterns and message handling
+---
+
+# MQTT Patterns and Standards
+
+## Topic Structure
+Follow the hierarchical topic structure defined in [Architecture.md](mdc:docs/Architecture.md):
+
+### Telemetry Topics
+```
+factory/<line>/<asset>/<signal>
+```
+- Example: `factory/A/press01/temperature`
+- QoS: 1 (at least once delivery)
+- Retain: false (live data)
+
+### State Topics
+```
+state/<asset>
+```
+- Example: `state/press01`
+- QoS: 1
+- Retain: true (last known state)
+
+### Alert Topics
+```
+alerts/<asset>/<signal>
+```
+- Example: `alerts/press01/temperature`
+- QoS: 1
+- Retain: false
+
+### Explanation Topics
+```
+explanations/<alertId>
+```
+- Example: `explanations/a-9f1c3`
+- QoS: 1
+- Retain: true
+
+### Control Topics
+```
+control/<asset>/<command>
+```
+- Example: `control/press01/isolate`
+- Commands: `isolate`, `throttle`, `unblock`
+- QoS: 1
+- Retain: false
+
+### Audit Topics
+```
+audit/actions
+```
+- QoS: 1
+- Retain: false
+
+## Message Patterns
+
+### Publishing Telemetry
+```python
+def publish_telemetry(asset_id: str, line: str, signal: str, value: float, unit: str):
+    topic = f"factory/{line}/{asset_id}/{signal}"
+    payload = {
+        "assetId": asset_id,
+        "line": line,
+        "signal": signal,
+        "value": value,
+        "unit": unit,
+        "ts": datetime.utcnow().isoformat() + "Z",
+        "quality": "Good",
+        "source": "opcua",
+        "seq": get_next_sequence()
+    }
+    client.publish(topic, json.dumps(payload), qos=1)
+```
+
+### Subscribing to Multiple Topics
+```python
+def setup_subscriptions():
+    # Subscribe to all telemetry
+    client.subscribe("factory/+/+/+", qos=1)
+    
+    # Subscribe to specific asset alerts
+    client.subscribe("alerts/press01/+", qos=1)
+    
+    # Subscribe to control commands
+    client.subscribe("control/+/+", qos=1)
+```
+
+## Error Handling
+- Implement connection retry logic with exponential backoff
+- Handle QoS failures gracefully
+- Log message delivery status
+- Implement dead letter queue for failed messages
+
+## Security
+- Use authentication for all MQTT connections
+- Implement ACLs for topic access control
+- Use TLS in production (optional for hackathon)
+- Validate message payloads before processing

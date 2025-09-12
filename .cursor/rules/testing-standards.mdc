@@ -1,0 +1,222 @@
+---
+description: Testing patterns and standards for GhostMesh
+---
+
+# Testing Standards for GhostMesh
+
+## Testing Strategy
+Focus on integration testing for the 2-day hackathon timeline:
+- **Unit-ish checks** for core components
+- **Integration tests** for end-to-end flow
+- **Performance tests** for latency requirements
+- **Demo script validation**
+
+## Core Test Categories
+
+### 1. Gateway Tests
+```python
+import pytest
+import asyncio
+from unittest.mock import Mock, patch
+
+class TestOPCUA2MQTTGateway:
+    @pytest.mark.asyncio
+    async def test_publishes_telemetry_on_node_change(self):
+        # Test that gateway publishes to correct MQTT topic when OPC UA node changes
+        pass
+    
+    def test_mapping_configuration_validation(self):
+        # Test that mapping.yaml is properly validated
+        pass
+    
+    def test_retained_state_publication(self):
+        # Test that state/<asset> topics are published with retain=True
+        pass
+```
+
+### 2. Anomaly Detector Tests
+```python
+class TestAnomalyDetector:
+    def test_z_score_calculation(self):
+        detector = RollingZScoreDetector(window_size=10)
+        
+        # Add normal readings
+        for i in range(10):
+            detector.add_reading("press01", "temperature", 100.0 + i, i)
+        
+        # Add anomaly
+        is_anomaly, severity, reason = detector.add_reading("press01", "temperature", 200.0, 10)
+        
+        assert is_anomaly == True
+        assert severity in ["medium", "high"]
+        assert "z-score" in reason
+    
+    def test_debounce_prevents_rapid_alerts(self):
+        # Test that debounce prevents multiple alerts within time window
+        pass
+    
+    def test_insufficient_data_handling(self):
+        # Test behavior with less than minimum samples
+        pass
+```
+
+### 3. Policy Engine Tests
+```python
+class TestPolicyEngine:
+    def test_isolate_command_blocks_asset(self):
+        # Test that isolate command results in asset being blocked
+        pass
+    
+    def test_audit_log_generation(self):
+        # Test that audit events are published for all actions
+        pass
+    
+    def test_unblock_restores_normal_operation(self):
+        # Test that unblock command restores normal data flow
+        pass
+```
+
+## Integration Test Framework
+```python
+import docker
+import time
+import json
+import paho.mqtt.client as mqtt
+
+class IntegrationTestSuite:
+    def __init__(self):
+        self.docker_client = docker.from_env()
+        self.mqtt_client = mqtt.Client()
+        self.received_messages = []
+    
+    def setup_test_environment(self):
+        # Start all services via docker-compose
+        pass
+    
+    def test_end_to_end_anomaly_detection(self):
+        # 1. Verify normal telemetry flow
+        # 2. Inject anomaly
+        # 3. Verify alert generation within 2 seconds
+        # 4. Verify explanation generation
+        # 5. Test isolate/unblock functionality
+        
+        # Inject anomaly by publishing extreme value
+        anomaly_payload = {
+            "assetId": "press01",
+            "line": "A", 
+            "signal": "temperature",
+            "value": 999.0,  # Extreme value
+            "unit": "C",
+            "ts": datetime.utcnow().isoformat() + "Z",
+            "quality": "Good",
+            "source": "test",
+            "seq": 1
+        }
+        
+        self.mqtt_client.publish("factory/A/press01/temperature", json.dumps(anomaly_payload))
+        
+        # Wait for alert (max 2 seconds)
+        start_time = time.time()
+        alert_received = False
+        
+        while time.time() - start_time < 2.0:
+            if self.check_for_alert("press01", "temperature"):
+                alert_received = True
+                break
+            time.sleep(0.1)
+        
+        assert alert_received, "Alert not generated within 2 seconds"
+    
+    def test_latency_requirements(self):
+        # Measure time from anomaly injection to alert generation
+        # Target: ≤ 2 seconds
+        pass
+    
+    def test_recovery_behavior(self):
+        # Test that system recovers properly after unblock
+        pass
+```
+
+## Performance Benchmarks
+```python
+class PerformanceTests:
+    def test_alert_latency(self):
+        # Measure: anomaly injection → alert generation
+        # Target: ≤ 2 seconds
+        pass
+    
+    def test_ui_refresh_rate(self):
+        # Measure: dashboard update frequency
+        # Target: 1-2 Hz
+        pass
+    
+    def test_memory_usage(self):
+        # Monitor memory usage on Raspberry Pi
+        # Ensure no memory leaks
+        pass
+```
+
+## Demo Script Validation
+```python
+class DemoScriptTests:
+    def test_demo_sequence_completeness(self):
+        # Validate that demo script can be executed end-to-end
+        # 1. Normal telemetry flow
+        # 2. Anomaly injection
+        # 3. Alert display
+        # 4. Explanation generation
+        # 5. Isolate action
+        # 6. Unblock action
+        # 7. Recovery verification
+        pass
+    
+    def test_demo_timing(self):
+        # Ensure demo can complete within 90-120 seconds
+        pass
+```
+
+## Test Data Management
+```python
+# Test data generators
+def generate_normal_telemetry(asset_id: str, signal: str, count: int = 100):
+    """Generate normal telemetry data for testing"""
+    base_value = 100.0
+    for i in range(count):
+        yield {
+            "assetId": asset_id,
+            "line": "A",
+            "signal": signal,
+            "value": base_value + random.gauss(0, 5),  # Normal distribution
+            "unit": "C",
+            "ts": datetime.utcnow().isoformat() + "Z",
+            "quality": "Good",
+            "source": "test",
+            "seq": i
+        }
+
+def generate_anomaly_telemetry(asset_id: str, signal: str, anomaly_type: str = "spike"):
+    """Generate anomalous telemetry for testing"""
+    if anomaly_type == "spike":
+        value = 999.0  # Extreme spike
+    elif anomaly_type == "flood":
+        value = 0.0    # Zero value
+    # Add more anomaly types as needed
+    
+    return {
+        "assetId": asset_id,
+        "line": "A",
+        "signal": signal,
+        "value": value,
+        "unit": "C", 
+        "ts": datetime.utcnow().isoformat() + "Z",
+        "quality": "Good",
+        "source": "test",
+        "seq": 999
+    }
+```
+
+## Continuous Testing
+- Run tests after each major component completion
+- Use pytest for test execution
+- Implement test automation in CI/CD pipeline
+- Monitor test coverage for critical paths

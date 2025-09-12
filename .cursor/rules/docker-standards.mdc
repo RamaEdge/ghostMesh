@@ -1,0 +1,68 @@
+---
+globs: Dockerfile,docker-compose.yml,*.dockerfile
+description: Docker and containerization standards
+---
+
+# Docker Standards for GhostMesh
+
+## Dockerfile Best Practices
+- Use multi-stage builds to minimize image size
+- Use specific version tags, not `latest`
+- Run as non-root user when possible
+- Use `.dockerignore` to exclude unnecessary files
+- Install only required dependencies
+
+### Standard Python Service Dockerfile
+```dockerfile
+FROM python:3.11-slim
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8080/health')" || exit 1
+
+# Default command
+CMD ["python", "main.py"]
+```
+
+## Docker Compose Structure
+Services should be defined in [docker-compose.yml](mdc:docker-compose.yml) with:
+- Proper service dependencies (`depends_on`)
+- Environment variable configuration
+- Volume mounts for configuration files
+- Health checks for service monitoring
+- Resource limits for Pi optimization
+
+## Service Naming Convention
+- Use kebab-case for service names: `opcua2mqtt`, `anomaly-detector`
+- Use consistent port mappings
+- Use environment variables for service discovery
+
+## Security Considerations
+- Run containers as non-root users
+- Use minimal base images (alpine/python:3.11-slim)
+- Don't expose unnecessary ports
+- Use secrets management for sensitive data
+- Implement proper network isolation
+
+## Performance Optimization for Raspberry Pi
+- Use multi-stage builds to reduce image size
+- Limit memory usage with appropriate resource constraints
+- Use volume mounts for persistent data
+- Implement proper logging to avoid disk space issues

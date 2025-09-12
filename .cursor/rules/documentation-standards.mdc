@@ -1,0 +1,190 @@
+---
+globs: *.md,*.rst,*.txt,README*,CHANGELOG*,docs/**
+description: Documentation standards following Microsoft style guide
+---
+
+# Documentation Standards
+
+## Microsoft Style Guide Compliance
+
+### Writing Style
+- Use clear, concise language
+- Write in active voice when possible
+- Use present tense for current information
+- Avoid jargon and technical terms without explanation
+- Keep sentences short and focused
+- Use parallel structure in lists and headings
+
+### Tone and Voice
+- Professional and authoritative
+- Helpful and instructional
+- Consistent throughout all documentation
+- Avoid casual language, slang, or contractions
+- No emojis or decorative elements
+- Use "you" to address the reader directly
+
+## Document Structure
+
+### Headings
+- Use sentence case for headings (capitalize first word and proper nouns only)
+- Use descriptive headings that clearly indicate content
+- Maintain consistent heading hierarchy (H1 > H2 > H3)
+- Avoid orphaned headings (headings with no content)
+
+### Lists
+- Use numbered lists for sequential steps
+- Use bulleted lists for non-sequential items
+- Start list items with capital letters
+- End list items with periods for complete sentences
+- Use parallel structure in list items
+
+### Code Examples
+```markdown
+## Example: Basic configuration
+
+The following example shows a basic configuration:
+
+```yaml
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+```
+
+### Tables
+- Use tables for structured data
+- Include clear column headers
+- Align content appropriately
+- Keep tables simple and scannable
+
+## Content Guidelines
+
+### Technical Writing
+- Define technical terms on first use
+- Use consistent terminology throughout
+- Provide context for technical decisions
+- Include prerequisites and assumptions
+- Explain the "why" behind recommendations
+
+### Code Documentation
+- Include inline comments for complex logic
+- Document function parameters and return values
+- Provide usage examples for APIs
+- Explain error conditions and handling
+- Document configuration options and defaults
+
+### User Documentation
+- Start with clear objectives
+- Provide step-by-step instructions
+- Include troubleshooting sections
+- Link to related documentation
+- Update documentation with code changes
+
+## File Organization
+
+### README Files
+- Start with project description and purpose
+- Include quick start instructions
+- List prerequisites and requirements
+- Provide links to detailed documentation
+- Include contribution guidelines
+
+### Architecture Documentation
+- Use clear diagrams with descriptive captions
+- Explain design decisions and trade-offs
+- Document interfaces and data flows
+- Include security considerations
+- Provide deployment guidance
+
+### API Documentation
+- Document all public interfaces
+- Include request/response examples
+- List error codes and meanings
+- Provide authentication requirements
+- Include rate limiting information
+
+## Language and Grammar
+
+### Capitalization
+- Use title case for proper nouns and product names
+- Use sentence case for headings and UI elements
+- Capitalize acronyms consistently
+- Follow standard English capitalization rules
+
+### Punctuation
+- Use serial commas in lists
+- Place periods inside quotation marks
+- Use semicolons to separate related clauses
+- Avoid excessive exclamation points
+
+### Numbers and Measurements
+- Spell out numbers zero through nine
+- Use numerals for 10 and above
+- Use numerals for measurements and technical specifications
+- Include units of measurement consistently
+
+## Examples
+
+### Good Documentation Example
+```markdown
+## Configure MQTT authentication
+
+To secure your MQTT broker, you must configure user authentication. The following steps show how to set up authentication for the GhostMesh services.
+
+### Prerequisites
+
+Before you begin, ensure that you have:
+- Docker and Docker Compose installed
+- Access to the GhostMesh configuration files
+- Administrative privileges on the target system
+
+### Steps
+
+1. Create the password file for Mosquitto
+2. Add user accounts for each service
+3. Configure access control lists (ACLs)
+4. Restart the MQTT broker
+
+### Create password file
+
+The password file stores encrypted user credentials for MQTT authentication.
+
+```bash
+mosquitto_passwd -c mosquitto/passwd iot
+```
+
+This command creates a new password file and adds the user "iot" with an encrypted password.
+```
+
+### Poor Documentation Example
+```markdown
+## MQTT Setup 🚀
+
+Hey! Let's get MQTT working! 
+
+You'll need to:
+- Install stuff
+- Do some config
+- Make it secure (kinda)
+
+Just run this and hope it works:
+```bash
+mosquitto_passwd -c mosquitto/passwd iot
+```
+
+Cool! 🎉
+```
+
+## Review Checklist
+
+Before publishing documentation, verify that:
+- [ ] All headings use sentence case
+- [ ] Technical terms are defined on first use
+- [ ] Code examples are complete and tested
+- [ ] Links are valid and current
+- [ ] No emojis or casual language
+- [ ] Consistent terminology throughout
+- [ ] Clear step-by-step instructions
+- [ ] Proper grammar and punctuation
+- [ ] Professional tone maintained
+- [ ] Content is accurate and up-to-date

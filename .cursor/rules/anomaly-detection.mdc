@@ -1,0 +1,118 @@
+---
+description: Anomaly detection algorithms and patterns
+---
+
+# Anomaly Detection Standards
+
+## Core Algorithm: Rolling Z-Score
+Implement rolling z-score detection as specified in [Architecture.md](mdc:docs/Architecture.md):
+
+### Parameters
+- **Window Size:** 120 seconds (configurable)
+- **Medium Threshold:** z-score ≥ 4
+- **High Threshold:** z-score ≥ 8
+- **Debounce:** Prevent rapid state changes
+
+### Implementation Pattern
+```python
+import numpy as np
+from collections import deque
+from typing import Dict, Tuple
+
+class RollingZScoreDetector:
+    def __init__(self, window_size: int = 120, medium_threshold: float = 4.0, high_threshold: float = 8.0):
+        self.window_size = window_size
+        self.medium_threshold = medium_threshold
+        self.high_threshold = high_threshold
+        self.windows: Dict[str, deque] = {}
+        self.last_alert_time: Dict[str, float] = {}
+        self.debounce_seconds = 30  # Prevent rapid alerts
+    
+    def add_reading(self, asset_id: str, signal: str, value: float, timestamp: float) -> Tuple[bool, str, str]:
+        key = f"{asset_id}:{signal}"
+        
+        # Initialize window if needed
+        if key not in self.windows:
+            self.windows[key] = deque(maxlen=self.window_size)
+        
+        # Add new reading
+        self.windows[key].append((timestamp, value))
+        
+        # Check if we have enough data
+        if len(self.windows[key]) < 10:  # Minimum samples
+            return False, "normal", "insufficient_data"
+        
+        # Calculate z-score
+        values = [v for _, v in self.windows[key]]
+        mean = np.mean(values)
+        std = np.std(values)
+        
+        if std == 0:
+            return False, "normal", "no_variance"
+        
+        z_score = abs(value - mean) / std
+        
+        # Determine severity
+        if z_score >= self.high_threshold:
+            severity = "high"
+        elif z_score >= self.medium_threshold:
+            severity = "medium"
+        else:
+            return False, "normal", f"z-score {z_score:.2f}"
+        
+        # Check debounce
+        if key in self.last_alert_time:
+            if timestamp - self.last_alert_time[key] < self.debounce_seconds:
+                return False, "normal", "debounced"
+        
+        # Update last alert time
+        self.last_alert_time[key] = timestamp
+        
+        reason = f"z-score {z_score:.1f} vs mean {mean:.1f}±{std:.1f} ({self.window_size}s)"
+        return True, severity, reason
+```
+
+## Alert Generation
+When anomaly is detected, publish alert to MQTT:
+
+```python
+def publish_alert(asset_id: str, signal: str, severity: str, reason: str, current_value: float):
+    alert_id = generate_alert_id()
+    topic = f"alerts/{asset_id}/{signal}"
+    
+    payload = {
+        "alertId": alert_id,
+        "assetId": asset_id,
+        "signal": signal,
+        "severity": severity,
+        "reason": reason,
+        "current": current_value,
+        "ts": datetime.utcnow().isoformat() + "Z"
+    }
+    
+    client.publish(topic, json.dumps(payload), qos=1)
+```
+
+## Optional: Isolation Forest
+For demonstration purposes, implement Isolation Forest for comparison:
+
+```python
+from sklearn.ensemble import IsolationForest
+
+class IsolationForestDetector:
+    def __init__(self, contamination: float = 0.1):
+        self.model = IsolationForest(contamination=contamination, random_state=42)
+        self.is_fitted = False
+        self.window_size = 100
+    
+    def add_reading(self, asset_id: str, signal: str, value: float, timestamp: float):
+        # Implementation for Isolation Forest detection
+        pass
+```
+
+## Performance Considerations
+- Use efficient data structures (deque for sliding windows)
+- Implement proper memory management
+- Consider using numpy for mathematical operations
+- Cache calculations when possible
+- Monitor memory usage on Raspberry Pi

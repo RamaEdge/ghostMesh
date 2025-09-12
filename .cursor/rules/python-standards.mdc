@@ -1,0 +1,66 @@
+---
+globs: *.py
+description: Python coding standards for GhostMesh services
+---
+
+# Python Coding Standards
+
+## General Guidelines
+- Use Python 3.9+ with type hints
+- Follow PEP 8 style guidelines
+- Use async/await for I/O operations (OPC UA, MQTT)
+- Implement proper error handling and logging
+- Use environment variables for configuration
+
+## Service-Specific Patterns
+
+### MQTT Integration
+```python
+import paho.mqtt.client as mqtt
+import json
+from typing import Dict, Any
+
+class MQTTService:
+    def __init__(self, host: str, port: int = 1883):
+        self.client = mqtt.Client()
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+    
+    def publish_telemetry(self, topic: str, data: Dict[str, Any]):
+        payload = json.dumps(data)
+        self.client.publish(topic, payload, qos=1, retain=True)
+```
+
+### OPC UA Integration
+```python
+from asyncua import Client
+import asyncio
+
+class OPCUAClient:
+    async def connect(self, endpoint: str):
+        self.client = Client(endpoint)
+        await self.client.connect()
+    
+    async def subscribe_to_nodes(self, node_ids: list):
+        # Implementation for subscribing to OPC UA nodes
+        pass
+```
+
+### JSON Schema Validation
+All MQTT messages must follow the defined schemas in [Architecture.md](mdc:docs/Architecture.md):
+- Telemetry: `{assetId, line, signal, value, unit, ts, quality, source, seq}`
+- Alert: `{alertId, assetId, signal, severity, reason, current, ts}`
+- Explanation: `{alertId, text, confidence, ts}`
+- Control: `{assetId, command, reason, refAlertId, ts}`
+- Audit: `{actionId, assetId, action, method, result, ts}`
+
+## Error Handling
+- Use structured logging with appropriate levels
+- Implement graceful degradation for network failures
+- Validate all incoming data before processing
+- Use try/catch blocks for external service calls
+
+## Configuration
+- Use YAML files for service configuration
+- Support environment variable overrides
+- Implement configuration validation on startup

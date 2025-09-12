@@ -1,0 +1,104 @@
+---
+description: Development workflow and best practices for GhostMesh hackathon
+---
+
+# Development Workflow for GhostMesh
+
+## Project Structure
+Follow the repository layout defined in [Implementation_Plan.md](mdc:docs/Implementation_Plan.md):
+
+```
+ghostmesh/
+├─ docker-compose.yml
+├─ mosquitto/
+│  ├─ mosquitto.conf
+│  └─ passwd
+├─ opcua2mqtt/      (OPC UA → MQTT Gateway)
+├─ anomaly/         (Z-score detector)
+├─ policy/          (Policy engine)
+├─ dashboard/       (Streamlit UI)
+└─ docs/           (Architecture & Implementation docs)
+```
+
+## Development Priorities (2-Day Timeline)
+
+### Day 1 Focus
+1. **MQTT Broker Setup** - Get Mosquitto running with authentication
+2. **Gateway Implementation** - OPC UA to MQTT data flow
+3. **Basic Dashboard** - Streamlit skeleton with telemetry display
+4. **Anomaly Detector** - Rolling z-score implementation
+5. **Policy Engine** - Basic isolate/unblock functionality
+6. **Integration Testing** - End-to-end flow validation
+
+### Day 2 Focus
+1. **UI Polish** - Better styling, alert cards, control buttons
+2. **LLM Explainer** - Alert explanation generation
+3. **Performance Optimization** - Latency and memory optimization
+4. **Demo Script** - Rehearsal and timing
+5. **Documentation** - README and presentation materials
+
+## Service Development Order
+1. **Mosquitto** - Foundation for all communication
+2. **OPC UA Gateway** - Data source for the system
+3. **Anomaly Detector** - Core AI functionality
+4. **Dashboard** - User interface for monitoring
+5. **Policy Engine** - Action enforcement
+6. **LLM Explainer** - Enhanced user experience
+
+## Configuration Management
+- Use environment variables for service configuration
+- Store sensitive data in Docker secrets or environment files
+- Validate configuration on service startup
+- Use YAML files for complex configurations (mapping.yaml)
+
+## Error Handling Strategy
+- Implement graceful degradation for network failures
+- Use structured logging with appropriate levels
+- Provide meaningful error messages to users
+- Implement retry logic for external service calls
+- Handle MQTT disconnections gracefully
+
+## Performance Considerations
+- Limit UI refresh rate to 1-2 Hz
+- Cap retained data points to 500 per signal
+- Use efficient data structures for sliding windows
+- Monitor memory usage on Raspberry Pi
+- Implement proper cleanup for long-running processes
+
+## Testing Approach
+- Focus on integration testing over unit testing
+- Test end-to-end flow after each major component
+- Validate latency requirements (≤2s for alerts)
+- Test recovery behavior after failures
+- Practice demo script multiple times
+
+## Demo Preparation
+- Keep demo script under 90-120 seconds
+- Have backup plan (recorded demo) ready
+- Test on actual Raspberry Pi hardware
+- Prepare for network issues during presentation
+- Have quick start commands ready for judges
+
+## Code Quality Standards
+- Use type hints for all Python functions
+- Follow PEP 8 style guidelines
+- Implement proper error handling
+- Use async/await for I/O operations
+- Document complex algorithms and business logic
+
+## Security Considerations
+- Use authentication for all MQTT connections
+- Implement proper ACLs for topic access
+- Run containers as non-root users
+- Validate all incoming data
+- Use least privilege principle for service permissions
+
+## Deployment Checklist
+- [ ] All services start successfully with docker-compose
+- [ ] MQTT broker accessible with proper authentication
+- [ ] OPC UA simulator or real device connected
+- [ ] Dashboard accessible from browser
+- [ ] Anomaly injection works reliably
+- [ ] Isolate/unblock actions function correctly
+- [ ] Audit events are logged properly
+- [ ] System recovers gracefully from failures
