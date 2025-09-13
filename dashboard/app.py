@@ -86,20 +86,41 @@ st.markdown("""
         transform: translateY(-1px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
+    .severity-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
     .severity-high {
-        background-color: #FED7D7 !important;
-        color: #C53030 !important;
-        font-weight: bold;
+        background: linear-gradient(135deg, #FED7D7 0%, #FEB2B2 100%);
+        color: #C53030;
+        border: 1px solid #F56565;
     }
     .severity-medium {
-        background-color: #FEEBC8 !important;
-        color: #DD6B20 !important;
-        font-weight: bold;
+        background: linear-gradient(135deg, #FEEBC8 0%, #FBD38D 100%);
+        color: #DD6B20;
+        border: 1px solid #ED8936;
     }
     .severity-low {
-        background-color: #C6F6D5 !important;
-        color: #2F855A !important;
-        font-weight: bold;
+        background: linear-gradient(135deg, #C6F6D5 0%, #9AE6B4 100%);
+        color: #2F855A;
+        border: 1px solid #48BB78;
+    }
+    .severity-critical {
+        background: linear-gradient(135deg, #FED7D7 0%, #FC8181 100%);
+        color: #9B2C2C;
+        border: 1px solid #E53E3E;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(229, 62, 62, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
     }
     .status-indicator {
         display: inline-block;
@@ -107,6 +128,7 @@ st.markdown("""
         height: 12px;
         border-radius: 50%;
         margin-right: 8px;
+        animation: statusPulse 2s infinite;
     }
     .status-connected {
         background-color: #38A169;
@@ -115,6 +137,45 @@ st.markdown("""
     .status-disconnected {
         background-color: #E53E3E;
         box-shadow: 0 0 6px rgba(229, 62, 62, 0.6);
+    }
+    .status-warning {
+        background-color: #DD6B20;
+        box-shadow: 0 0 6px rgba(221, 107, 32, 0.6);
+    }
+    @keyframes statusPulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #2E86AB;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .demo-button {
+        background: linear-gradient(135deg, #A23B72 0%, #F18F01 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: bold;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(162, 59, 114, 0.3);
+        margin: 0.5rem 0;
+    }
+    .demo-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(162, 59, 114, 0.4);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -130,6 +191,10 @@ if 'mqtt_connected' not in st.session_state:
     st.session_state.mqtt_connected = False
 if 'mqtt_client' not in st.session_state:
     st.session_state.mqtt_client = None
+if 'is_loading' not in st.session_state:
+    st.session_state.is_loading = False
+if 'demo_mode' not in st.session_state:
+    st.session_state.demo_mode = False
 
 class MQTTClient:
     def __init__(self):
@@ -235,6 +300,40 @@ class MQTTClient:
         except Exception as e:
             st.error(f"Failed to publish control command: {e}")
             return False
+
+def render_severity_badge(severity):
+    """Render a styled severity badge"""
+    severity_map = {
+        'critical': {'class': 'severity-critical', 'icon': '🚨', 'text': 'CRITICAL'},
+        'high': {'class': 'severity-high', 'icon': '🔴', 'text': 'HIGH'},
+        'medium': {'class': 'severity-medium', 'icon': '🟡', 'text': 'MEDIUM'},
+        'low': {'class': 'severity-low', 'icon': '🟢', 'text': 'LOW'}
+    }
+    
+    severity_info = severity_map.get(severity.lower(), severity_map['low'])
+    
+    return f"""
+    <span class="severity-badge {severity_info['class']}">
+        {severity_info['icon']} {severity_info['text']}
+    </span>
+    """
+
+def get_system_status():
+    """Get overall system status based on alerts and connections"""
+    if not st.session_state.mqtt_connected:
+        return 'disconnected', 'Disconnected', '#E53E3E'
+    
+    if not st.session_state.alerts_data:
+        return 'connected', 'All Systems Normal', '#38A169'
+    
+    # Check for critical/high severity alerts
+    high_severity_count = sum(1 for alert in st.session_state.alerts_data 
+                             if alert.get('severity', '').lower() in ['critical', 'high'])
+    
+    if high_severity_count > 0:
+        return 'warning', f'{high_severity_count} High Priority Alert(s)', '#DD6B20'
+    else:
+        return 'connected', 'Monitoring Active', '#38A169'
 
 def create_telemetry_chart():
     """Create real-time telemetry chart using Plotly"""
@@ -367,20 +466,46 @@ def create_alerts_table():
         if all(col in display_df.columns for col in display_columns):
             display_df = display_df[display_columns]
         
-        # Color code severity
-        def color_severity(val):
-            if val == 'high':
-                return 'background-color: #FED7D7; color: #C53030; font-weight: bold;'
-            elif val == 'medium':
-                return 'background-color: #FEEBC8; color: #DD6B20; font-weight: bold;'
-            elif val == 'low':
-                return 'background-color: #C6F6D5; color: #2F855A; font-weight: bold;'
-            return ''
+        # Convert severity to badges
+        display_df['severity_badge'] = display_df['severity'].apply(render_severity_badge)
         
-        styled_df = display_df.style.applymap(color_severity, subset=['severity'])
-        return styled_df, df
+        # Remove the original severity column and use badge instead
+        display_columns_with_badge = ['timestamp', 'asset', 'signal', 'severity_badge', 'current', 'reason']
+        display_df = display_df[display_columns_with_badge]
+        display_df = display_df.rename(columns={'severity_badge': 'severity'})
+        
+        return display_df, df
     else:
         return pd.DataFrame({'Message': ['No alerts available']}), pd.DataFrame()
+
+def inject_anomaly():
+    """Inject a demo anomaly for testing purposes"""
+    if st.session_state.mqtt_client and st.session_state.mqtt_connected:
+        # Create a demo anomaly alert
+        demo_alert = {
+            "alertId": f"demo-{int(time.time())}",
+            "assetId": "Press01",
+            "signal": "Temperature",
+            "severity": "high",
+            "reason": "Demo anomaly injection - z-score 9.2 vs mean 42.1±1.0 (120s)",
+            "current": 95.7,
+            "ts": datetime.now().isoformat()
+        }
+        
+        # Publish to alerts topic
+        topic = f"alerts/{demo_alert['assetId']}/{demo_alert['signal']}"
+        message = json.dumps(demo_alert)
+        
+        try:
+            st.session_state.mqtt_client.publish(topic, message, qos=1, retain=True)
+            st.success("🎯 Demo anomaly injected successfully!")
+            return True
+        except Exception as e:
+            st.error(f"❌ Failed to inject demo anomaly: {e}")
+            return False
+    else:
+        st.error("❌ MQTT not connected. Cannot inject anomaly.")
+        return False
 
 def create_control_buttons(alert_data):
     """Create control buttons for alerts"""
@@ -388,6 +513,20 @@ def create_control_buttons(alert_data):
         return
     
     st.subheader("🎛️ Control Actions")
+    
+    # Demo anomaly injection button
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        if st.button("🎯 Inject Demo Anomaly", key="inject_anomaly", help="Inject a demo anomaly for testing"):
+            with st.spinner("Injecting anomaly..."):
+                inject_anomaly()
+                st.rerun()
+    
+    with col2:
+        if st.button("🔄 Refresh Alerts", key="refresh_alerts"):
+            st.rerun()
+    
+    st.divider()
     
     # Get unique assets with active alerts
     assets_with_alerts = alert_data['asset'].unique()
@@ -446,14 +585,26 @@ def main():
     with st.sidebar:
         st.header("🔧 Control Panel")
         
-        # MQTT Connection Status
-        st.subheader("🔗 Connection Status")
-        if st.session_state.mqtt_connected:
-            st.markdown('<span class="status-indicator status-connected"></span>MQTT Connected', unsafe_allow_html=True)
-            st.success("🟢 Connected to GhostMesh MQTT Broker")
+        # Enhanced system status
+        st.subheader("🔗 System Status")
+        status_type, status_text, status_color = get_system_status()
+        
+        if status_type == 'connected':
+            status_class = 'status-connected'
+            status_icon = '🟢'
+        elif status_type == 'warning':
+            status_class = 'status-warning'
+            status_icon = '🟡'
         else:
-            st.markdown('<span class="status-indicator status-disconnected"></span>MQTT Disconnected', unsafe_allow_html=True)
-            st.error("🔴 Not connected to MQTT broker")
+            status_class = 'status-disconnected'
+            status_icon = '🔴'
+        
+        st.markdown(f"""
+        <div style="margin-bottom: 1rem;">
+            <div class="status-indicator {status_class}"></div>
+            <span style="color: {status_color}; font-weight: bold;">{status_icon} {status_text}</span>
+        </div>
+        """, unsafe_allow_html=True)
         
         # MQTT Connection Controls
         st.subheader("⚙️ MQTT Settings")
