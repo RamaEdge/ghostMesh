@@ -142,12 +142,21 @@ quick-restart: stop start ## Quick restart: stop and start all services
 
 test-the166: ## Test THE-166 AI Explainer service
 	@echo "$(BLUE)Testing THE-166 AI Explainer service...$(NC)"
-	@if [ -f "tests/the166/test_explanation_generation.py" ]; then \
-		python -m pytest tests/the166/test_explanation_generation.py -v; \
+	@if [ -f "tests/the166/run_tests.py" ]; then \
+		python3 tests/the166/run_tests.py; \
 	else \
 		echo "$(YELLOW)No THE-166 tests found$(NC)"; \
 	fi
 	@echo "$(GREEN)✓ THE-166 tests completed$(NC)"
+
+test-the66: ## Test THE-66 Anomaly Injection and Alert Validation
+	@echo "$(BLUE)Testing THE-66 Anomaly Injection and Alert Validation...$(NC)"
+	@if [ -f "tests/the66/run_tests.py" ]; then \
+		python3 tests/the66/run_tests.py; \
+	else \
+		echo "$(YELLOW)No THE-66 tests found$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ THE-66 tests completed$(NC)"
 
 ## Development
 dev: ## Start development environment
@@ -181,4 +190,4 @@ info: ## Show project information
 	@echo "  - docs/Architecture.md"
 	@echo "  - docs/Quickstart_Guide.md"
 
-.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-the166 dev info test test-opcua test-gateway test-mqtt test-integration
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-the166 test-the66 dev info test test-opcua test-gateway test-mqtt test-integration
