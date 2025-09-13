@@ -83,7 +83,7 @@ After successful setup, you'll have these services running:
 | **OPC UA Gateway** | - | Converts OPC UA data to MQTT telemetry |
 | **Anomaly Detector** | - | Rolling z-score anomaly detection |
 | **Policy Engine** | - | Enforces security actions and audit logging |
-| **Streamlit Dashboard** | 8501 | Real-time monitoring interface |
+| **Streamlit Dashboard** | 8501 | Real-time monitoring and control interface |
 
 ## Verify Data Flow
 
