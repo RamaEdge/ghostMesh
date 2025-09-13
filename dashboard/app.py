@@ -202,6 +202,8 @@ if 'is_loading' not in st.session_state:
     st.session_state.is_loading = False
 if 'demo_mode' not in st.session_state:
     st.session_state.demo_mode = False
+if 'connection_status' not in st.session_state:
+    st.session_state.connection_status = "disconnected"
 
 class MQTTClient:
     def __init__(self):
@@ -215,7 +217,7 @@ class MQTTClient:
         if rc == 0:
             self.connected = True
             st.session_state.mqtt_connected = True
-            st.success("✅ Connected to MQTT broker")
+            st.session_state.connection_status = "connected"
             # Subscribe to telemetry topics
             client.subscribe("factory/+/+/+")
             client.subscribe("alerts/+/+")
@@ -223,7 +225,7 @@ class MQTTClient:
             client.subscribe("control/+/+")
             client.subscribe("audit/actions")
         else:
-            st.error(f"❌ Failed to connect to MQTT broker. Code: {rc}")
+            st.session_state.connection_status = f"failed_{rc}"
             
     def on_message(self, client, userdata, msg):
         try:
@@ -269,12 +271,13 @@ class MQTTClient:
                     st.session_state.audit_data = st.session_state.audit_data[-50:]
                     
         except Exception as e:
-            st.error(f"Error processing MQTT message: {e}")
+            # Log error without using Streamlit from background thread
+            print(f"Error processing MQTT message: {e}")
             
     def on_disconnect(self, client, userdata, rc):
         self.connected = False
         st.session_state.mqtt_connected = False
-        st.warning("⚠️ Disconnected from MQTT broker")
+        st.session_state.connection_status = "disconnected"
         
     def connect(self, host=None, port=None, username=None, password=None):
         try:
@@ -288,7 +291,8 @@ class MQTTClient:
             self.client.connect(host, port, 60)
             self.client.loop_start()
         except Exception as e:
-            st.error(f"Failed to connect to MQTT: {e}")
+            st.session_state.connection_status = f"error_{str(e)}"
+            print(f"Failed to connect to MQTT: {e}")
             
     def disconnect(self):
         self.client.loop_stop()
@@ -626,34 +630,45 @@ def main():
         mqtt_username = st.text_input("Username", value=MQTT_USERNAME)
         mqtt_password = st.text_input("Password", value=MQTT_PASSWORD, type="password")
         
+        # Show connection status
+        if st.session_state.connection_status == "connected":
+            st.success("✅ Connected to MQTT broker")
+        elif st.session_state.connection_status.startswith("failed_"):
+            st.error(f"❌ Failed to connect to MQTT broker. Code: {st.session_state.connection_status.split('_')[1]}")
+        elif st.session_state.connection_status.startswith("error_"):
+            st.error(f"❌ Connection error: {st.session_state.connection_status.split('_', 1)[1]}")
+        elif st.session_state.connection_status == "disconnected":
+            st.info("🔌 Not connected to MQTT broker")
+        
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Connect"):
                 with st.spinner("Connecting to MQTT..."):
                     mqtt_client = MQTTClient()
-                    if mqtt_client.connect(mqtt_host, mqtt_port, mqtt_username, mqtt_password):
-                        st.session_state.mqtt_client = mqtt_client
-                        st.success("✅ Connected to MQTT broker")
-                    else:
-                        st.error("❌ Failed to connect to MQTT broker")
+                    mqtt_client.connect(mqtt_host, mqtt_port, mqtt_username, mqtt_password)
+                    st.session_state.mqtt_client = mqtt_client
+                    # Wait a moment for connection to establish
+                    time.sleep(1)
+                    st.rerun()
         
         with col2:
             if st.button("Disconnect") and 'mqtt_client' in st.session_state:
                 with st.spinner("Disconnecting..."):
                     st.session_state.mqtt_client.disconnect()
                     st.session_state.mqtt_connected = False
-                    st.success("✅ Disconnected from MQTT broker")
+                    st.session_state.connection_status = "disconnected"
+                    st.rerun()
         
         # Auto-connect if not connected and environment variables are set
         if not st.session_state.mqtt_connected and MQTT_HOST != 'localhost':
             if st.button("🔄 Auto-Connect", help="Connect using environment variables"):
                 with st.spinner("Auto-connecting to MQTT..."):
                     mqtt_client = MQTTClient()
-                    if mqtt_client.connect():
-                        st.session_state.mqtt_client = mqtt_client
-                        st.success("✅ Auto-connected to MQTT broker")
-                    else:
-                        st.error("❌ Failed to auto-connect to MQTT broker")
+                    mqtt_client.connect()
+                    st.session_state.mqtt_client = mqtt_client
+                    # Wait a moment for connection to establish
+                    time.sleep(1)
+                    st.rerun()
         
         # Refresh controls
         st.subheader("Data Controls")
