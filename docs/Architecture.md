@@ -74,7 +74,7 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
 3) **Anomaly Detector** subscribes and computes rolling baselines; emits **alerts** to `alerts/<asset>/<signal>`. ✅
 4) **AI Explainer** subscribes to alerts, generates short text explanations → `explanations/<alertId>`. 🔄
 5) **Dashboard** renders telemetry/alerts/explanations; operator can publish **control** commands to `control/<asset>/<command>`. ✅
-6) **Policy Engine** subscribes to alerts/control and enforces block/throttle; publishes **audit** events `audit/actions`. 🔄
+6) **Policy Engine** subscribes to alerts/control and enforces block/throttle; publishes **audit** events `audit/actions`. ✅
 
 **Topics**
 - Telemetry: `factory/<line>/<asset>/<signal>`  
@@ -131,11 +131,11 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
 - **LLM:** Local tiny model (e.g., Qwen‑0.5/1.8B via llama.cpp) or external API.  
 - **Output:** `explanations/<alertId>` with `{ text, confidence }`.
 
-### 4.5 Policy Engine
+### 4.5 Policy Engine ✅ IMPLEMENTED
 - **Goal:** Map alert severity/commands to actions.  
-- **Actions:** `isolate` (nftables drop per device), `throttle` (tc qdisc), `unblock`.  
-- **App‑layer fallback:** Broker ACL denylist per client/asset for safe demo.  
-- **Audit:** Publish `audit/actions` with result (success/fail).
+- **Implementation:** `isolate` (app-layer blocking), `throttle` (rate limiting), `unblock` (restore).  
+- **Features:** App-layer blocking with state tracking, comprehensive audit logging, auto-policy for high severity alerts.
+- **Audit:** Publish `audit/actions` with result (success/fail) and unique action IDs.
 
 ### 4.6 Dashboard (Streamlit)
 - **Views:** live charts (telemetry), alerts table, explanation panel, action buttons.  
