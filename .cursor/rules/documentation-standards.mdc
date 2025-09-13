@@ -82,6 +82,27 @@ services:
 
 ## File Organization
 
+### Documentation Structure
+All documentation must be organized in the `docs/` directory:
+
+```
+docs/
+├── Project_README.md          # Complete project documentation
+├── Architecture.md            # System architecture and design
+├── Implementation_Plan.md     # Development timeline and tasks
+├── MQTT_Configuration.md      # MQTT broker setup and configuration
+├── API_Documentation.md       # Service APIs and interfaces
+└── Deployment_Guide.md        # Deployment and operations guide
+```
+
+### Root README.md
+The root README.md should be minimal and focused:
+- Brief project description
+- Quick start commands
+- Links to detailed documentation in `docs/`
+- Current project status
+- Basic contribution information
+
 ### README Files
 - Start with project description and purpose
 - Include quick start instructions
@@ -102,6 +123,12 @@ services:
 - List error codes and meanings
 - Provide authentication requirements
 - Include rate limiting information
+
+### Configuration Documentation
+- Document all configuration files and options
+- Provide setup instructions and examples
+- Include security considerations
+- Explain default values and their implications
 
 ## Language and Grammar
 

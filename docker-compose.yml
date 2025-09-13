@@ -1,6 +1,9 @@
 # GhostMesh Container Compose Configuration
 # Edge AI Security Copilot Services
 # Compatible with both Docker and Podman
+# 
+# Documentation: docs/Project_README.md
+# MQTT Configuration: docs/MQTT_Configuration.md
 
 version: '3.8'
 
