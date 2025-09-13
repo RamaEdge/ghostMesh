@@ -45,3 +45,4 @@ All documentation is organized in the `docs/` directory:
 - [Architecture.md](mdc:docs/Architecture.md) - System architecture and design
 - [Implementation_Plan.md](mdc:docs/Implementation_Plan.md) - Development timeline
 - [MQTT_Configuration.md](mdc:docs/MQTT_Configuration.md) - MQTT broker setup
+- [OPC_UA_Gateway.md](mdc:docs/OPC_UA_Gateway.md) - OPC UA to MQTT gateway

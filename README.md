@@ -27,6 +27,7 @@ make status        # Check service status
 - **[Architecture](docs/Architecture.md)** - System architecture and design
 - **[Implementation Plan](docs/Implementation_Plan.md)** - 2-day hackathon timeline
 - **[MQTT Configuration](docs/MQTT_Configuration.md)** - MQTT broker setup and configuration
+- **[OPC UA Gateway](docs/OPC_UA_Gateway.md)** - OPC UA to MQTT gateway implementation
 
 ## Project Status
 
@@ -34,7 +35,7 @@ This is a hackathon project implementing edge AI security for industrial IoT env
 
 **Current Implementation:**
 - ✅ MQTT broker with authentication and ACL
-- 🔄 OPC UA to MQTT gateway (in progress)
+- ✅ OPC UA to MQTT gateway
 - 🔄 Anomaly detector (planned)
 - 🔄 Policy engine (planned)
 - 🔄 Streamlit dashboard (planned)

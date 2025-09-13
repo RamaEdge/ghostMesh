@@ -54,7 +54,7 @@ build-mqtt: ## Build only MQTT broker
 	$(COMPOSE_CMD) build mosquitto
 	@echo "$(GREEN)✓ MQTT broker built$(NC)"
 
-build-gateway: ## Build OPC UA gateway (when implemented)
+build-gateway: ## Build OPC UA gateway
 	@echo "$(BLUE)Building OPC UA gateway...$(NC)"
 	$(COMPOSE_CMD) build opcua2mqtt
 	@echo "$(GREEN)✓ OPC UA gateway built$(NC)"
@@ -104,7 +104,7 @@ logs: ## Show logs for all services
 logs-mqtt: ## Show MQTT broker logs
 	$(COMPOSE_CMD) logs -f mosquitto
 
-logs-gateway: ## Show gateway logs (when implemented)
+logs-gateway: ## Show gateway logs
 	$(COMPOSE_CMD) logs -f opcua2mqtt
 
 logs-detector: ## Show detector logs (when implemented)
@@ -149,9 +149,13 @@ test-mqtt: ## Test MQTT broker connectivity and permissions
 	@./scripts/test-mqtt.sh
 	@echo "$(GREEN)✓ MQTT tests completed$(NC)"
 
-test-unit: ## Run unit tests (when implemented)
+test-unit: ## Run unit tests
 	@echo "$(BLUE)Running unit tests...$(NC)"
-	@echo "$(YELLOW)Unit tests not yet implemented$(NC)"
+	@if [ -f opcua2mqtt/test_gateway.py ]; then \
+		cd opcua2mqtt && python -m pytest test_gateway.py -v; \
+	else \
+		echo "$(YELLOW)Unit tests not yet implemented$(NC)"; \
+	fi
 
 test-integration: ## Run integration tests (when implemented)
 	@echo "$(BLUE)Running integration tests...$(NC)"
