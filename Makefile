@@ -1,7 +1,7 @@
 # GhostMesh Makefile
 # Edge AI Security Copilot - Essential Commands
 
-.PHONY: help build start stop test logs status clean setup
+.PHONY: help build build-dashboard start stop test logs status clean setup
 
 # Default target
 help: ## Show this help message
@@ -48,6 +48,11 @@ build: ## Build all container images
 	$(COMPOSE_CMD) build
 	@echo "$(GREEN)✓ All containers built$(NC)"
 
+build-dashboard: ## Build dashboard container
+	@echo "$(BLUE)Building dashboard container...$(NC)"
+	$(COMPOSE_CMD) build dashboard
+	@echo "$(GREEN)✓ Dashboard container built$(NC)"
+
 ## Service Management
 start: ## Start all services
 	@echo "$(BLUE)Starting GhostMesh services...$(NC)"
@@ -55,6 +60,7 @@ start: ## Start all services
 	@echo "$(GREEN)✓ All services started$(NC)"
 	@echo "$(YELLOW)Dashboard: http://localhost:8501$(NC)"
 	@echo "$(YELLOW)MQTT: localhost:$(MQTT_PORT)$(NC)"
+	@echo "$(YELLOW)Mock OPC UA: localhost:4840$(NC)"
 
 stop: ## Stop all services
 	@echo "$(BLUE)Stopping GhostMesh services...$(NC)"
@@ -141,9 +147,9 @@ info: ## Show project information
 	@echo "  - MQTT Broker (Mosquitto) ✓"
 	@echo "  - Mock OPC UA Server ✓"
 	@echo "  - OPC UA Gateway ✓"
+	@echo "  - Streamlit Dashboard ✓"
 	@echo "  - Anomaly Detector (planned)"
 	@echo "  - Policy Engine (planned)"
-	@echo "  - Streamlit Dashboard (planned)"
 	@echo ""
 	@echo "$(BLUE)Documentation:$(NC)"
 	@echo "  - docs/Project_README.md"

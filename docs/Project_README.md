@@ -24,10 +24,10 @@ GhostMesh provides invisible AI defense at the edge by:
 - ✅ **OPC UA → MQTT Gateway**: Subscribes to OPC UA nodes, publishes to MQTT
 - ✅ **MQTT Broker**: Mosquitto with user authentication and ACLs
 - ✅ **Mock OPC UA Server**: Simulates industrial equipment data
+- ✅ **Streamlit Dashboard**: Real-time monitoring and control interface
 - 🔄 **Anomaly Detector**: Rolling z-score detection over 120s windows (planned)
 - 🔄 **AI Explainer**: Local LLM or API for alert explanations (planned)
 - 🔄 **Policy Engine**: Enforces isolate/throttle/unblock actions (planned)
-- 🔄 **Dashboard**: Streamlit UI for monitoring and control (planned)
 
 ## Current Implementation Status
 
@@ -41,6 +41,16 @@ GhostMesh provides invisible AI defense at the edge by:
 - Retained state messages to `state/<asset>` topics
 - Comprehensive error handling and reconnection logic
 - Real-time data flow at ~1Hz
+
+**Streamlit Dashboard (THE-61)**
+- Real-time telemetry charts using Plotly
+- Alerts table with color-coded severity levels
+- MQTT client with connection controls
+- Responsive layout with sidebar navigation
+- System metrics and status display
+- Sample data for demonstration
+- Custom CSS styling and theming
+- Containerized deployment on port 8501
 
 **Infrastructure**
 - Mock OPC UA server for development and testing
