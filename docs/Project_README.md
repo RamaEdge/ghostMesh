@@ -42,14 +42,15 @@ GhostMesh provides invisible AI defense at the edge by:
 - Comprehensive error handling and reconnection logic
 - Real-time data flow at ~1Hz
 
-**Streamlit Dashboard (THE-61)**
-- Real-time telemetry charts using Plotly
-- Alerts table with color-coded severity levels
-- MQTT client with connection controls
-- Responsive layout with sidebar navigation
-- System metrics and status display
-- Sample data for demonstration
-- Custom CSS styling and theming
+**Streamlit Dashboard (THE-61 & THE-64)**
+- Real-time telemetry charts using Plotly with MQTT data integration
+- Interactive alerts table with severity-based color coding
+- Functional control buttons for policy enforcement (Isolate, Throttle, Unblock)
+- GhostMesh branding with professional gradient design
+- Live data updates with optimized 2Hz refresh rate
+- MQTT client with connection controls and command publishing
+- Responsive layout with sidebar navigation and status indicators
+- System metrics and live data point counters
 - Containerized deployment on port 8501
 
 **Anomaly Detector (THE-62)**
