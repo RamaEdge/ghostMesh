@@ -77,8 +77,8 @@ class RollingZScoreDetector:
         if key not in self.data_windows:
             self.data_windows[key] = deque()
         
-        # Add new data point
-        self.data_windows[key].append((timestamp, value))
+        # Add new data point (ensure value is float)
+        self.data_windows[key].append((timestamp, float(value)))
         
         # Remove old data points (older than window_size seconds)
         cutoff_time = timestamp - self.window_size
@@ -228,6 +228,18 @@ class AnomalyDetectorService:
             
             if value is None or timestamp is None:
                 logger.warning(f"Missing value or timestamp in {topic}")
+                return
+            
+            # Skip non-numeric signals (like status)
+            if signal.lower() == 'status':
+                logger.debug(f"Skipping non-numeric signal: {signal}")
+                return
+            
+            # Convert value to float
+            try:
+                value = float(value)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid value format in {topic}: {value} - {e}")
                 return
             
             # Convert timestamp to float
