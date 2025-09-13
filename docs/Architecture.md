@@ -70,10 +70,10 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
 1) **OPC UA** device value changes → Gateway subscription receives updates. ✅
 2) Gateway normalizes to **JSON** and publishes to **MQTT** topics `factory/<line>/<asset>/<signal>`. ✅
 
-**Planned Implementation (Steps 3-6)**
-3) **Anomaly Detector** subscribes and computes rolling baselines; emits **alerts** to `alerts/<asset>/<signal>`. 🔄
+**Current Implementation (Steps 3-6)**
+3) **Anomaly Detector** subscribes and computes rolling baselines; emits **alerts** to `alerts/<asset>/<signal>`. ✅
 4) **AI Explainer** subscribes to alerts, generates short text explanations → `explanations/<alertId>`. 🔄
-5) **Dashboard** renders telemetry/alerts/explanations; operator can publish **control** commands to `control/<asset>/<command>`. 🔄
+5) **Dashboard** renders telemetry/alerts/explanations; operator can publish **control** commands to `control/<asset>/<command>`. ✅
 6) **Policy Engine** subscribes to alerts/control and enforces block/throttle; publishes **audit** events `audit/actions`. 🔄
 
 **Topics**
@@ -120,9 +120,10 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
 - **Goal:** Decouple producers/consumers; QoS, retained liveness.  
 - **Security:** Disable anonymous, per‑service users, optional TLS (demo‑optional).
 
-### 4.3 Anomaly Detector
+### 4.3 Anomaly Detector ✅ IMPLEMENTED
 - **Goal:** Online detection over sliding windows; emit alerts with rationale.  
-- **MVP:** Rolling z‑score per (asset, signal) over W=120s. Medium if z≥4; High if z≥8; debounce.  
+- **Implementation:** Rolling z‑score per (asset, signal) over W=120s. Medium if z≥4; High if z≥8; 30s debounce.  
+- **Features:** Efficient deque operations, edge case handling, MQTT integration, containerized deployment.
 - **Optional:** IsolationForest on short windows for show‑time.
 
 ### 4.4 AI Explainer

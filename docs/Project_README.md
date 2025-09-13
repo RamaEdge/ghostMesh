@@ -52,6 +52,16 @@ GhostMesh provides invisible AI defense at the edge by:
 - Custom CSS styling and theming
 - Containerized deployment on port 8501
 
+**Anomaly Detector (THE-62)**
+- Rolling z-score algorithm with 120-second sliding window
+- Severity thresholds: medium (z≥4), high (z≥8)
+- 30-second debounce logic to prevent alert spam
+- MQTT subscription to `factory/+/+/+` telemetry topics
+- Alert publishing to `alerts/<asset>/<signal>` topics
+- Edge case handling for insufficient data and zero variance
+- Performance optimized for Raspberry Pi
+- Containerized deployment with health checks
+
 **Infrastructure**
 - Mock OPC UA server for development and testing
 - MQTT broker with authentication and ACLs
@@ -74,9 +84,19 @@ GhostMesh provides invisible AI defense at the edge by:
 }
 ```
 
-### 🔄 Planned Features
+### ✅ Completed Features
 
-- **Anomaly Detector**: Rolling z-score analysis over 120s windows
+**Anomaly Detector (THE-62)**
+- Rolling z-score analysis over 120s windows
+- Severity thresholds: medium (z≥4), high (z≥8)
+- 30-second debounce logic to prevent alert spam
+- MQTT subscription to telemetry topics
+- Alert publishing to `alerts/<asset>/<signal>` topics
+- Edge case handling for insufficient data and zero variance
+- Performance optimized for Raspberry Pi
+- Containerized deployment with health checks
+
+### 🔄 Planned Features
 - **AI Explainer**: LLM-based risk explanation for detected anomalies
 - **Policy Engine**: Automated response actions (throttle/isolate/unblock)
 - **Streamlit Dashboard**: Real-time monitoring and control interface
