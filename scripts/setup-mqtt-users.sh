@@ -17,7 +17,12 @@ rm -f mosquitto/passwd
 echo "Creating password file..."
 
 # Create users with their passwords using podman
-podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -c -b /mosquitto/config/passwd iot iotpass gateway gatewaypass detector detectorpass explainer explainerpass policy policypass dashboard dashboardpass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -c -b /mosquitto/config/passwd iot iotpass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwd gateway gatewaypass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwd detector detectorpass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwd explainer explainerpass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwd policy policypass
+podman run --rm -v $(pwd)/mosquitto:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -b /mosquitto/config/passwd dashboard dashboardpass
 
 echo "MQTT users created successfully!"
 echo ""
