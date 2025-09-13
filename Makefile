@@ -1,7 +1,7 @@
 # GhostMesh Makefile
 # Edge AI Security Copilot - Essential Commands
 
-.PHONY: help build build-dashboard build-anomaly build-policy start stop test logs status clean setup
+.PHONY: help build build-dashboard build-anomaly build-policy build-explainer build-llm-server setup-hf-auth start stop test logs status clean setup
 
 # Default target
 help: ## Show this help message
@@ -68,6 +68,22 @@ build-explainer: ## Build AI explainer container
 	$(COMPOSE_CMD) build explainer
 	@echo "$(GREEN)✓ AI explainer container built$(NC)"
 
+setup-hf-auth: ## Set up Hugging Face authentication
+	@echo "$(BLUE)Setting up Hugging Face authentication...$(NC)"
+	@if [ ! -f llm-server/.hf_token ]; then \
+		echo "$(YELLOW)Creating .hf_token file from template...$(NC)"; \
+		cp llm-server/.hf_token.template llm-server/.hf_token; \
+		echo "$(YELLOW)Please edit llm-server/.hf_token and add your Hugging Face token$(NC)"; \
+		echo "$(YELLOW)Get your token from: https://huggingface.co/settings/tokens$(NC)"; \
+	else \
+		echo "$(GREEN).hf_token file already exists$(NC)"; \
+	fi
+
+build-llm-server: setup-hf-auth ## Build LLM server container
+	@echo "$(BLUE)Building LLM server container...$(NC)"
+	$(COMPOSE_CMD) build llm-server
+	@echo "$(GREEN)✓ LLM server container built$(NC)"
+
 ## Service Management
 start: ## Start all services
 	@echo "$(BLUE)Starting GhostMesh services...$(NC)"
@@ -76,6 +92,7 @@ start: ## Start all services
 	@echo "$(YELLOW)Dashboard: http://localhost:8501$(NC)"
 	@echo "$(YELLOW)MQTT: localhost:$(MQTT_PORT)$(NC)"
 	@echo "$(YELLOW)Mock OPC UA: localhost:4840$(NC)"
+	@echo "$(YELLOW)LLM Server: http://localhost:8080$(NC)"
 
 stop: ## Stop all services
 	@echo "$(BLUE)Stopping GhostMesh services...$(NC)"
@@ -189,11 +206,12 @@ info: ## Show project information
 	@echo "  - Streamlit Dashboard ✓"
 	@echo "  - Anomaly Detector ✓"
 	@echo "  - Policy Engine ✓"
-	@echo "  - AI Explainer ✓"
+	@echo "  - AI Explainer (LLM) ✓"
+	@echo "  - LLM Server (llama.cpp) ✓"
 	@echo ""
 	@echo "$(BLUE)Documentation:$(NC)"
 	@echo "  - docs/Project_README.md"
 	@echo "  - docs/Architecture.md"
 	@echo "  - docs/Quickstart_Guide.md"
 
-.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration

@@ -91,12 +91,14 @@ services:
     networks:
       - ghostmesh-network
 
-  # AI Explainer Service - Implemented in THE-166
+  # AI Explainer Service - Implemented in THE-67 (LLM Integration)
   explainer:
     build: ./explainer
     container_name: ghostmesh-explainer
     depends_on:
       mosquitto:
+        condition: service_healthy
+      llm-server:
         condition: service_healthy
     environment:
       - MQTT_HOST=mosquitto
@@ -104,10 +106,32 @@ services:
       - MQTT_USERNAME=explainer
       - MQTT_PASSWORD=explainerpass
       - MQTT_QOS=1
-      - EXPLANATION_TIMEOUT=5
+      - LLM_SERVER_URL=http://llm-server:8080
+      - DEFAULT_USER_TYPE=hybrid
+      - EXPLANATION_TIMEOUT=10
     restart: unless-stopped
     networks:
       - ghostmesh-network
+
+  # LLM Server - Implemented in THE-67
+  llm-server:
+    build: ./llm-server
+    container_name: ghostmesh-llm-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - llm_models:/models
+    environment:
+      - MODEL_PATH=/models/tinyllama-1.1b-chat.gguf
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   # Streamlit Dashboard - Implemented in THE-61
   dashboard:
@@ -131,6 +155,8 @@ volumes:
   mosquitto_data:
     driver: local
   mosquitto_logs:
+    driver: local
+  llm_models:
     driver: local
 
 networks:
