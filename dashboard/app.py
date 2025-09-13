@@ -529,7 +529,7 @@ def inject_anomaly():
             "assetId": "Press01",
             "signal": "Temperature",
             "severity": "high",
-            "reason": "Demo anomaly injection - z-score 9.2 vs mean 42.1±1.0 (120s)",
+            "reason": "Demo anomaly injection - Reading 95.7°C is unusually high compared to normal range",
             "current": 95.7,
             "ts": datetime.now().isoformat()
         }

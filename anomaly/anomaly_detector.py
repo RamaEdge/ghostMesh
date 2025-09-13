@@ -162,12 +162,20 @@ class RollingZScoreDetector:
         mean = np.mean(values)
         std = np.std(values, ddof=1)
         
+        # Create operator-friendly reason
+        if z_score > 3.0:
+            reason = f"Reading {current_value:.1f} is unusually high compared to normal range"
+        elif z_score < -3.0:
+            reason = f"Reading {current_value:.1f} is unusually low compared to normal range"
+        else:
+            reason = f"Reading {current_value:.1f} is outside normal operating range"
+        
         alert = {
             "alertId": f"a-{uuid.uuid4().hex[:8]}",
             "assetId": asset_id,
             "signal": signal,
             "severity": severity,
-            "reason": f"z-score {z_score:.1f} vs mean {mean:.1f}±{std:.1f} ({self.window_size}s)",
+            "reason": reason,
             "current": current_value,
             "ts": datetime.now(timezone.utc).isoformat()
         }
