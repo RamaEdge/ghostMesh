@@ -539,11 +539,16 @@ def inject_anomaly():
         message = json.dumps(demo_alert)
         
         try:
-            st.session_state.mqtt_client.publish(topic, message, qos=1, retain=True)
-            st.success("🎯 Demo anomaly injected successfully!")
-            return True
+            result = st.session_state.mqtt_client.publish(topic, message, qos=1, retain=True)
+            if result.rc == 0:  # MQTT_ERR_SUCCESS
+                print(f"✅ Demo anomaly published successfully to {topic}")
+                return True
+            else:
+                st.error(f"❌ Failed to publish demo anomaly. MQTT error code: {result.rc}")
+                return False
         except Exception as e:
             st.error(f"❌ Failed to inject demo anomaly: {e}")
+            print(f"Error details: {e}")
             return False
     else:
         st.error("❌ MQTT not connected. Cannot inject anomaly.")
@@ -561,8 +566,11 @@ def create_control_buttons(alert_data):
     with col1:
         if st.button("🎯 Inject Demo Anomaly", key="inject_anomaly", help="Inject a demo anomaly for testing"):
             with st.spinner("Injecting anomaly..."):
-                inject_anomaly()
-                st.rerun()
+                success = inject_anomaly()
+                if success:
+                    st.success("✅ Demo anomaly injected! Check the alerts table.")
+                else:
+                    st.error("❌ Failed to inject demo anomaly. Check MQTT connection.")
     
     with col2:
         if st.button("🔄 Refresh Alerts", key="refresh_alerts"):
