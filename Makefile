@@ -1,7 +1,7 @@
 # GhostMesh Makefile
 # Edge AI Security Copilot - Essential Commands
 
-.PHONY: help build build-dashboard build-anomaly build-policy build-explainer build-llm-server setup-hf-auth start stop test logs status clean setup
+.PHONY: help build build-dashboard build-anomaly build-policy build-explainer build-llm-server setup-hf-auth start stop test logs status clean setup validate-setup validate-runtime dev prod
 
 # Default target
 help: ## Show this help message
@@ -213,5 +213,36 @@ info: ## Show project information
 	@echo "  - docs/Project_README.md"
 	@echo "  - docs/Architecture.md"
 	@echo "  - docs/Quickstart_Guide.md"
+	@echo "  - docs/Configuration_Guide.md"
+	@echo "  - docs/Troubleshooting_Guide.md"
 
-.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration
+## Validation
+validate-setup: ## Validate system setup and configuration
+	@echo "$(BLUE)Validating GhostMesh setup...$(NC)"
+	@python3 scripts/validate-setup.py --verbose
+	@echo "$(GREEN)✓ Setup validation completed$(NC)"
+
+validate-runtime: ## Validate runtime system health and data flow
+	@echo "$(BLUE)Validating GhostMesh runtime...$(NC)"
+	@python3 scripts/validate-runtime.py --verbose
+	@echo "$(GREEN)✓ Runtime validation completed$(NC)"
+
+## Deployment Profiles
+dev: ## Start development environment with debug logging
+	@echo "$(BLUE)Starting GhostMesh development environment...$(NC)"
+	@echo "$(YELLOW)Features: Debug logging, hot reload, development tools$(NC)"
+	$(COMPOSE_CMD) -f docker-compose.yml -f docker-compose.dev.yml up -d
+	@echo "$(GREEN)✓ Development environment started$(NC)"
+	@echo "$(BLUE)Dashboard: http://localhost:8501$(NC)"
+	@echo "$(BLUE)LLM Server: http://localhost:8080$(NC)"
+
+prod: ## Start production environment with monitoring
+	@echo "$(BLUE)Starting GhostMesh production environment...$(NC)"
+	@echo "$(YELLOW)Features: Optimized settings, monitoring, security hardening$(NC)"
+	$(COMPOSE_CMD) -f docker-compose.yml -f docker-compose.prod.yml up -d
+	@echo "$(GREEN)✓ Production environment started$(NC)"
+	@echo "$(BLUE)Dashboard: http://localhost:8501$(NC)"
+	@echo "$(BLUE)LLM Server: http://localhost:8080$(NC)"
+	@echo "$(BLUE)Monitoring: http://localhost:9090$(NC)"
+
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration validate-setup validate-runtime prod

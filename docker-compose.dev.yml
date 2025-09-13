@@ -1,0 +1,116 @@
+# GhostMesh Development Compose Override
+# Development-specific configurations for local development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Development: Enable debug logging and expose additional ports
+  mosquitto:
+    ports:
+      - "1883:1883"
+      - "9001:9001"  # WebSocket port for development
+    environment:
+      - MOSQUITTO_USERNAME=mosquitto
+      - DEBUG=true
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/passwd:/mosquitto/config/passwd
+      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+      - ./mosquitto/logs:/mosquitto/log  # Mount logs for development
+
+  # Development: Enable hot reload and debug mode
+  opcua2mqtt:
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=gateway
+      - MQTT_PASSWORD=gatewaypass
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./opcua2mqtt:/app  # Mount source for development
+    command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client opcua2mqtt.py
+
+  # Development: Enable debug mode and expose debug port
+  anomaly:
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=iotpass
+      - MQTT_QOS=1
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./anomaly:/app  # Mount source for development
+    ports:
+      - "5679:5678"  # Debug port
+
+  # Development: Enable debug mode
+  policy:
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=iotpass
+      - MQTT_QOS=1
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./policy:/app  # Mount source for development
+
+  # Development: Enable debug mode and hot reload
+  explainer:
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=explainer
+      - MQTT_PASSWORD=explainerpass
+      - MQTT_QOS=1
+      - LLM_SERVER_URL=http://llm-server:8080
+      - DEFAULT_USER_TYPE=hybrid
+      - EXPLANATION_TIMEOUT=10
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./explainer:/app  # Mount source for development
+
+  # Development: Enable debug mode and expose debug port
+  llm-server:
+    environment:
+      - MODEL_PATH=/models/tinyllama-1.1b-chat.gguf
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8080:8080"
+      - "8081:8081"  # Debug port
+
+  # Development: Enable debug mode and hot reload
+  dashboard:
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=dashboard
+      - MQTT_PASSWORD=dashboard123
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./dashboard:/app  # Mount source for development
+    ports:
+      - "8501:8501"
+      - "8502:8502"  # Debug port
+
+  # Development: Add development tools
+  dev-tools:
+    image: python:3.11-slim
+    container_name: ghostmesh-dev-tools
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    command: tail -f /dev/null
+    networks:
+      - ghostmesh-network
+    environment:
+      - PYTHONPATH=/workspace

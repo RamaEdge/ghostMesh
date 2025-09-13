@@ -1,1 +1,17 @@
-paho-mqtt>=1.6.1
+# GhostMesh Policy Engine Dependencies
+# Python packages required for the policy engine service
+
+# MQTT client library
+paho-mqtt==1.6.1
+
+# Configuration and data handling
+PyYAML==6.0.1
+pydantic==2.5.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Testing dependencies (for development)
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
