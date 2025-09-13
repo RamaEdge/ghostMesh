@@ -2,7 +2,14 @@
 
 ## Overview
 
-The LLM Explainer Service is a core component of GhostMesh that generates intelligent, context-aware explanations for security alerts using local Large Language Model (LLM) integration via llama.cpp. This service replaces hardcoded rule-based explanations with dynamic, AI-powered interpretations that adapt to different user types and alert contexts.
+The LLM Explainer Service is a core component of GhostMesh that generates intelligent, context-aware explanations for security alerts using local Large Language Model (LLM) integration via llama.cpp. This service provides dynamic, AI-powered interpretations that adapt to different user types and alert contexts.
+
+## Status: ✅ IMPLEMENTED AND OPERATIONAL
+
+**Linear Issue:** THE-67  
+**Implementation Date:** September 13, 2025  
+**Service Name:** `explainer`  
+**Container:** `ghostmesh-explainer`
 
 ## Architecture
 

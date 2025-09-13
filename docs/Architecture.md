@@ -29,10 +29,11 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
   ├─ ✅ OPC UA → MQTT Gateway (opcua2mqtt) - OPERATIONAL
   ├─ ✅ MQTT Broker (Mosquitto) - OPERATIONAL
   ├─ ✅ Mock OPC UA Server - OPERATIONAL
-  ├─ 🔄 Anomaly Detector (z‑score/IForest) - PLANNED
-  ├─ 🔄 AI Explainer (local LLM/API) - PLANNED
-  ├─ 🔄 Policy Engine (isolate/throttle/unblock) - PLANNED
-  └─ 🔄 Dashboard (Streamlit) - PLANNED
+  ├─ ✅ Anomaly Detector (z‑score analysis) - OPERATIONAL
+  ├─ ✅ AI Explainer (local LLM/TinyLlama) - OPERATIONAL
+  ├─ ✅ Policy Engine (isolate/throttle/unblock) - OPERATIONAL
+  ├─ ✅ LLM Server (llama.cpp) - OPERATIONAL
+  └─ ✅ Dashboard (Streamlit) - OPERATIONAL
 
 [Operator]
   └─ Browser → Dashboard

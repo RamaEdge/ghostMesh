@@ -48,6 +48,12 @@ cd ghostmesh
 make quick-start
 ```
 
+### 3. Validate Installation (Optional)
+```bash
+make validate-setup    # Check system setup and configuration
+make validate-runtime  # Monitor runtime health and data flow
+```
+
 This command will:
 - Set up MQTT users and permissions
 - Build all container images
@@ -195,12 +201,16 @@ This will show all 18 available targets:
 | `make help` | Show this help message |
 | `make setup` | Initial project setup |
 | `make build` | Build all container images |
-| `make start` | Start all services |
+| `make start` | Start all services (production) |
 | `make stop` | Stop all services |
 | `make restart` | Restart all services |
 | `make status` | Show service status |
 | `make logs` | Show logs for all services |
 | `make test` | Run all tests |
+| `make dev` | Start development environment |
+| `make prod` | Start production environment |
+| `make validate-setup` | Validate system setup and configuration |
+| `make validate-runtime` | Validate runtime system health |
 | `make test-mqtt` | Test MQTT broker connectivity |
 | `make test-gateway` | Test OPC UA gateway |
 | `make clean` | Clean up containers and images |
@@ -289,6 +299,32 @@ See the "All Available Commands" section above for the complete list of all 18 t
 make test          # Run all tests
 make quick-test    # Start services and run tests
 ```
+
+## Deployment Profiles
+
+GhostMesh supports different deployment profiles for different use cases:
+
+### Development Profile
+```bash
+make dev
+```
+**Features:**
+- Debug logging enabled
+- Hot reload for source code changes
+- Additional debug ports exposed
+- Development tools container included
+- Mock OPC UA server enabled
+
+### Production Profile
+```bash
+make prod
+```
+**Features:**
+- Optimized resource limits
+- Structured logging with rotation
+- Monitoring service included
+- Mock OPC UA server disabled
+- Security hardening applied
 
 ## Advanced Configuration
 
