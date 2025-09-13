@@ -1,2 +1,22 @@
-paho-mqtt>=1.6.1
-numpy>=1.24.0
+# GhostMesh Anomaly Detector Dependencies
+# Python packages required for the anomaly detection service
+
+# MQTT client library
+paho-mqtt==1.6.1
+
+# Numerical computing
+numpy==1.24.3
+
+# Data processing
+pandas==2.0.3
+
+# Statistical analysis
+scipy==1.11.1
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Testing dependencies (for development)
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-mock==3.12.0
