@@ -1,7 +1,7 @@
 # GhostMesh Makefile
 # Edge AI Security Copilot - Essential Commands
 
-.PHONY: help build build-dashboard start stop test logs status clean setup
+.PHONY: help build build-dashboard build-anomaly start stop test logs status clean setup
 
 # Default target
 help: ## Show this help message
@@ -52,6 +52,11 @@ build-dashboard: ## Build dashboard container
 	@echo "$(BLUE)Building dashboard container...$(NC)"
 	$(COMPOSE_CMD) build dashboard
 	@echo "$(GREEN)✓ Dashboard container built$(NC)"
+
+build-anomaly: ## Build anomaly detector container
+	@echo "$(BLUE)Building anomaly detector container...$(NC)"
+	$(COMPOSE_CMD) build anomaly
+	@echo "$(GREEN)✓ Anomaly detector container built$(NC)"
 
 ## Service Management
 start: ## Start all services
@@ -148,7 +153,7 @@ info: ## Show project information
 	@echo "  - Mock OPC UA Server ✓"
 	@echo "  - OPC UA Gateway ✓"
 	@echo "  - Streamlit Dashboard ✓"
-	@echo "  - Anomaly Detector (planned)"
+	@echo "  - Anomaly Detector ✓"
 	@echo "  - Policy Engine (planned)"
 	@echo ""
 	@echo "$(BLUE)Documentation:$(NC)"
