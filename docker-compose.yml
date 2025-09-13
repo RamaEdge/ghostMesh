@@ -74,20 +74,22 @@ services:
     networks:
       - ghostmesh-network
 
-  # policy:
-  #   build: ./policy
-  #   container_name: ghostmesh-policy
-  #   depends_on:
-  #     mosquitto:
-  #       condition: service_healthy
-  #   environment:
-  #     - MQTT_HOST=mosquitto
-  #     - MQTT_PORT=1883
-  #     - MQTT_USERNAME=policy
-  #     - MQTT_PASSWORD=policypass
-  #   restart: unless-stopped
-  #   networks:
-  #     - ghostmesh-network
+  # Policy Engine - Implemented in THE-63
+  policy:
+    build: ./policy
+    container_name: ghostmesh-policy
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=iotpass
+      - MQTT_QOS=1
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
 
   # Streamlit Dashboard - Implemented in THE-61
   dashboard:
