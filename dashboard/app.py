@@ -212,20 +212,23 @@ class MQTTClient:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
         self.connected = False
+        # Thread-safe data storage
+        self._telemetry_data = []
+        self._alerts_data = []
+        self._audit_data = []
         
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             self.connected = True
-            st.session_state.mqtt_connected = True
-            st.session_state.connection_status = "connected"
             # Subscribe to telemetry topics
             client.subscribe("factory/+/+/+")
             client.subscribe("alerts/+/+")
             client.subscribe("explanations/+")
             client.subscribe("control/+/+")
             client.subscribe("audit/actions")
+            print(f"MQTT connected successfully")
         else:
-            st.session_state.connection_status = f"failed_{rc}"
+            print(f"MQTT connection failed with code: {rc}")
             
     def on_message(self, client, userdata, msg):
         try:
@@ -245,10 +248,12 @@ class MQTTClient:
                     payload['asset'] = topic_parts[2]
                     payload['signal'] = topic_parts[3]
                 
-                st.session_state.telemetry_data.append(payload)
-                # Keep only last 200 data points
-                if len(st.session_state.telemetry_data) > 200:
-                    st.session_state.telemetry_data = st.session_state.telemetry_data[-200:]
+                # Store in a thread-safe way
+                if hasattr(self, '_telemetry_data'):
+                    self._telemetry_data.append(payload)
+                    # Keep only last 200 data points
+                    if len(self._telemetry_data) > 200:
+                        self._telemetry_data = self._telemetry_data[-200:]
             
             # Store alerts data
             elif topic.startswith("alerts/"):
@@ -258,17 +263,21 @@ class MQTTClient:
                     payload['asset'] = topic_parts[1]
                     payload['signal'] = topic_parts[2]
                 
-                st.session_state.alerts_data.append(payload)
-                # Keep only last 100 alerts
-                if len(st.session_state.alerts_data) > 100:
-                    st.session_state.alerts_data = st.session_state.alerts_data[-100:]
+                # Store in a thread-safe way
+                if hasattr(self, '_alerts_data'):
+                    self._alerts_data.append(payload)
+                    # Keep only last 100 alerts
+                    if len(self._alerts_data) > 100:
+                        self._alerts_data = self._alerts_data[-100:]
             
             # Store audit data
             elif topic == "audit/actions":
-                st.session_state.audit_data.append(payload)
-                # Keep only last 50 audit events
-                if len(st.session_state.audit_data) > 50:
-                    st.session_state.audit_data = st.session_state.audit_data[-50:]
+                # Store in a thread-safe way
+                if hasattr(self, '_audit_data'):
+                    self._audit_data.append(payload)
+                    # Keep only last 50 audit events
+                    if len(self._audit_data) > 50:
+                        self._audit_data = self._audit_data[-50:]
                     
         except Exception as e:
             # Log error without using Streamlit from background thread
@@ -276,8 +285,7 @@ class MQTTClient:
             
     def on_disconnect(self, client, userdata, rc):
         self.connected = False
-        st.session_state.mqtt_connected = False
-        st.session_state.connection_status = "disconnected"
+        print(f"MQTT disconnected")
         
     def connect(self, host=None, port=None, username=None, password=None):
         try:
@@ -291,7 +299,6 @@ class MQTTClient:
             self.client.connect(host, port, 60)
             self.client.loop_start()
         except Exception as e:
-            st.session_state.connection_status = f"error_{str(e)}"
             print(f"Failed to connect to MQTT: {e}")
             
     def disconnect(self):
@@ -648,7 +655,17 @@ def main():
                     mqtt_client.connect(mqtt_host, mqtt_port, mqtt_username, mqtt_password)
                     st.session_state.mqtt_client = mqtt_client
                     # Wait a moment for connection to establish
-                    time.sleep(1)
+                    time.sleep(2)
+                    # Update connection status based on actual connection
+                    if mqtt_client.connected:
+                        st.session_state.mqtt_connected = True
+                        st.session_state.connection_status = "connected"
+                        # Sync data from MQTT client to session state
+                        st.session_state.telemetry_data = mqtt_client._telemetry_data.copy()
+                        st.session_state.alerts_data = mqtt_client._alerts_data.copy()
+                        st.session_state.audit_data = mqtt_client._audit_data.copy()
+                    else:
+                        st.session_state.connection_status = "failed"
                     st.rerun()
         
         with col2:
@@ -667,7 +684,17 @@ def main():
                     mqtt_client.connect()
                     st.session_state.mqtt_client = mqtt_client
                     # Wait a moment for connection to establish
-                    time.sleep(1)
+                    time.sleep(2)
+                    # Update connection status based on actual connection
+                    if mqtt_client.connected:
+                        st.session_state.mqtt_connected = True
+                        st.session_state.connection_status = "connected"
+                        # Sync data from MQTT client to session state
+                        st.session_state.telemetry_data = mqtt_client._telemetry_data.copy()
+                        st.session_state.alerts_data = mqtt_client._alerts_data.copy()
+                        st.session_state.audit_data = mqtt_client._audit_data.copy()
+                    else:
+                        st.session_state.connection_status = "failed"
                     st.rerun()
         
         # Refresh controls
