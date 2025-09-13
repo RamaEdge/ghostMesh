@@ -1,0 +1,102 @@
+# GhostMesh OPC UA to MQTT Mapping Configuration
+# Defines how OPC UA nodes map to MQTT topics
+
+# OPC UA server configuration
+opcua:
+  endpoint: "opc.tcp://mock-opcua:4840"
+  security_policy: "None"
+  security_mode: "None"
+  username: null
+  password: null
+  session_timeout: 60000
+  connection_timeout: 10000
+  reconnect_interval: 5000
+
+# MQTT broker configuration
+mqtt:
+  host: "mosquitto"
+  port: 1883
+  username: "gateway"
+  password: "gatewaypass"
+  qos: 1
+  retain_state: true
+  keepalive: 60
+  reconnect_interval: 5
+
+# Node mappings from OPC UA to MQTT topics
+mappings:
+  # Press line A - Press01 asset
+  - nodeId: "ns=2;i=3"
+    topic: "factory/A/press01/temperature"
+    unit: "C"
+    data_type: "float"
+    description: "Press01 temperature sensor"
+    
+  - nodeId: "ns=2;i=4"
+    topic: "factory/A/press01/pressure"
+    unit: "bar"
+    data_type: "float"
+    description: "Press01 pressure sensor"
+    
+  - nodeId: "ns=2;i=5"
+    topic: "factory/A/press01/vibration"
+    unit: "mm/s"
+    data_type: "float"
+    description: "Press01 vibration sensor"
+    
+  - nodeId: "ns=2;i=6"
+    topic: "factory/A/press01/status"
+    unit: ""
+    data_type: "string"
+    description: "Press01 operational status"
+
+  # Press line A - Press02 asset
+  - nodeId: "ns=2;i=8"
+    topic: "factory/A/press02/temperature"
+    unit: "C"
+    data_type: "float"
+    description: "Press02 temperature sensor"
+    
+  - nodeId: "ns=2;i=9"
+    topic: "factory/A/press02/pressure"
+    unit: "bar"
+    data_type: "float"
+    description: "Press02 pressure sensor"
+    
+  - nodeId: "ns=2;i=10"
+    topic: "factory/A/press02/vibration"
+    unit: "mm/s"
+    data_type: "float"
+    description: "Press02 vibration sensor"
+    
+  - nodeId: "ns=2;i=11"
+    topic: "factory/A/press02/status"
+    unit: ""
+    data_type: "string"
+    description: "Press02 operational status"
+
+  # Conveyor line B - Conveyor01 asset
+  - nodeId: "ns=2;i=13"
+    topic: "factory/B/conveyor01/speed"
+    unit: "m/min"
+    data_type: "float"
+    description: "Conveyor01 speed sensor"
+    
+  - nodeId: "ns=2;i=14"
+    topic: "factory/B/conveyor01/load"
+    unit: "kg"
+    data_type: "float"
+    description: "Conveyor01 load sensor"
+    
+  - nodeId: "ns=2;i=15"
+    topic: "factory/B/conveyor01/status"
+    unit: ""
+    data_type: "string"
+    description: "Conveyor01 operational status"
+
+# Global settings
+settings:
+  publish_interval: 1000  # milliseconds
+  state_retention: 300    # seconds
+  max_reconnect_attempts: 10
+  log_level: "INFO"

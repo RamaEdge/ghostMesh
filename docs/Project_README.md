@@ -21,14 +21,59 @@ GhostMesh provides invisible AI defense at the edge by:
 **Data Flow:** OPC UA → MQTT → AI Detection → Explanation → Policy Action
 
 **Core Services:**
-- **OPC UA → MQTT Gateway**: Subscribes to OPC UA nodes, publishes to MQTT
-- **MQTT Broker**: Mosquitto with user authentication and ACLs
-- **Anomaly Detector**: Rolling z-score detection over 120s windows
-- **AI Explainer**: Local LLM or API for alert explanations
-- **Policy Engine**: Enforces isolate/throttle/unblock actions
-- **Dashboard**: Streamlit UI for monitoring and control
+- ✅ **OPC UA → MQTT Gateway**: Subscribes to OPC UA nodes, publishes to MQTT
+- ✅ **MQTT Broker**: Mosquitto with user authentication and ACLs
+- ✅ **Mock OPC UA Server**: Simulates industrial equipment data
+- 🔄 **Anomaly Detector**: Rolling z-score detection over 120s windows (planned)
+- 🔄 **AI Explainer**: Local LLM or API for alert explanations (planned)
+- 🔄 **Policy Engine**: Enforces isolate/throttle/unblock actions (planned)
+- 🔄 **Dashboard**: Streamlit UI for monitoring and control (planned)
+
+## Current Implementation Status
+
+### ✅ Completed Features
+
+**OPC UA to MQTT Gateway (THE-60)**
+- Async OPC UA client using `asyncua` library
+- 11 node mappings for Press01, Press02, and Conveyor01 equipment
+- JSON telemetry messages with structured schema
+- MQTT topics following `factory/<line>/<asset>/<signal>` pattern
+- Retained state messages to `state/<asset>` topics
+- Comprehensive error handling and reconnection logic
+- Real-time data flow at ~1Hz
+
+**Infrastructure**
+- Mock OPC UA server for development and testing
+- MQTT broker with authentication and ACLs
+- Containerized services with Podman
+- Comprehensive Makefile for build, test, and deployment
+- Automated test suite
+
+**Sample Telemetry Data:**
+```json
+{
+  "assetId": "press01",
+  "line": "A",
+  "signal": "temperature",
+  "value": 33.66,
+  "unit": "C",
+  "ts": "2025-09-13T10:25:52.797652+00:00",
+  "quality": "Good",
+  "source": "opcua",
+  "seq": 347
+}
+```
+
+### 🔄 Planned Features
+
+- **Anomaly Detector**: Rolling z-score analysis over 120s windows
+- **AI Explainer**: LLM-based risk explanation for detected anomalies
+- **Policy Engine**: Automated response actions (throttle/isolate/unblock)
+- **Streamlit Dashboard**: Real-time monitoring and control interface
 
 ## Quick Start
+
+> **New to GhostMesh?** Start with the [Quickstart Guide](Quickstart_Guide.md) for a 5-minute setup walkthrough.
 
 ### Prerequisites
 
@@ -41,7 +86,20 @@ GhostMesh provides invisible AI defense at the edge by:
 ```bash
 git clone <repo> && cd ghostmesh
 make quick-start
-open http://<pi-ip>:8501   # Streamlit dashboard
+make test          # Verify everything is working
+```
+
+### Verify Installation
+
+```bash
+# Check service status
+make status
+
+# View live telemetry data
+timeout 10s podman exec ghostmesh-mosquitto mosquitto_sub -h localhost -u gateway -P gatewaypass -t "factory/+/+/+" -C 5 -W 5
+
+# View service logs
+make logs
 ```
 
 ### Makefile Commands

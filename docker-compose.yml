@@ -5,25 +5,33 @@
 # Documentation: docs/Project_README.md
 # MQTT Configuration: docs/MQTT_Configuration.md
 
-version: '3.8'
-
 services:
+  # Mock OPC UA Server for development and testing
+  mock-opcua:
+    build: ./mock-opcua
+    container_name: ghostmesh-mock-opcua
+    ports:
+      - "4840:4840"
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: ghostmesh-mosquitto
     ports:
       - "1883:1883"
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      - ./mosquitto/passwd:/mosquitto/config/passwd:ro
-      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf:ro
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/passwd:/mosquitto/config/passwd
+      - ./mosquitto/acl.conf:/mosquitto/config/acl.conf
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
     environment:
       - MOSQUITTO_USERNAME=mosquitto
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck"]
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck", "-u", "iot", "-P", "iotpass"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,13 +39,15 @@ services:
     networks:
       - ghostmesh-network
 
-  # Placeholder services - will be implemented in subsequent issues
+  # OPC UA to MQTT Gateway - Implemented in THE-60
   opcua2mqtt:
     build: ./opcua2mqtt
     container_name: ghostmesh-gateway
     depends_on:
       mosquitto:
         condition: service_healthy
+      mock-opcua:
+        condition: service_started
     environment:
       - MQTT_HOST=mosquitto
       - MQTT_PORT=1883
@@ -47,53 +57,54 @@ services:
     networks:
       - ghostmesh-network
 
-  anomaly:
-    build: ./anomaly
-    container_name: ghostmesh-detector
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=detector
-      - MQTT_PASSWORD=detectorpass
-      - MQTT_QOS=1
-    restart: unless-stopped
-    networks:
-      - ghostmesh-network
+  # Placeholder services - will be implemented in subsequent issues
+  # anomaly:
+  #   build: ./anomaly
+  #   container_name: ghostmesh-detector
+  #   depends_on:
+  #     mosquitto:
+  #       condition: service_healthy
+  #   environment:
+  #     - MQTT_HOST=mosquitto
+  #     - MQTT_PORT=1883
+  #     - MQTT_USERNAME=detector
+  #     - MQTT_PASSWORD=detectorpass
+  #     - MQTT_QOS=1
+  #   restart: unless-stopped
+  #   networks:
+  #     - ghostmesh-network
 
-  policy:
-    build: ./policy
-    container_name: ghostmesh-policy
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=policy
-      - MQTT_PASSWORD=policypass
-    restart: unless-stopped
-    networks:
-      - ghostmesh-network
+  # policy:
+  #   build: ./policy
+  #   container_name: ghostmesh-policy
+  #   depends_on:
+  #     mosquitto:
+  #       condition: service_healthy
+  #   environment:
+  #     - MQTT_HOST=mosquitto
+  #     - MQTT_PORT=1883
+  #     - MQTT_USERNAME=policy
+  #     - MQTT_PASSWORD=policypass
+  #   restart: unless-stopped
+  #   networks:
+  #     - ghostmesh-network
 
-  dashboard:
-    build: ./dashboard
-    container_name: ghostmesh-dashboard
-    ports:
-      - "8501:8501"
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=dashboard
-      - MQTT_PASSWORD=dashboardpass
-    restart: unless-stopped
-    networks:
-      - ghostmesh-network
+  # dashboard:
+  #   build: ./dashboard
+  #   container_name: ghostmesh-dashboard
+  #   ports:
+  #     - "8501:8501"
+  #   depends_on:
+  #     mosquitto:
+  #       condition: service_healthy
+  #   environment:
+  #     - MQTT_HOST=mosquitto
+  #     - MQTT_PORT=1883
+  #     - MQTT_USERNAME=dashboard
+  #     - MQTT_PASSWORD=dashboardpass
+  #   restart: unless-stopped
+  #   networks:
+  #     - ghostmesh-network
 
 volumes:
   mosquitto_data:
