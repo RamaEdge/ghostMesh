@@ -195,6 +195,8 @@ if 'alerts_data' not in st.session_state:
     st.session_state.alerts_data = []
 if 'audit_data' not in st.session_state:
     st.session_state.audit_data = []
+if 'explanations_data' not in st.session_state:
+    st.session_state.explanations_data = []
 if 'mqtt_connected' not in st.session_state:
     st.session_state.mqtt_connected = False
 if 'mqtt_client' not in st.session_state:
@@ -216,6 +218,7 @@ class MQTTClient:
         # Thread-safe data storage
         self._telemetry_data = []
         self._alerts_data = []
+        self._explanations_data = []
         self._audit_data = []
         
     def on_connect(self, client, userdata, flags, rc):
@@ -270,6 +273,20 @@ class MQTTClient:
                     # Keep only last 100 alerts
                     if len(self._alerts_data) > 100:
                         self._alerts_data = self._alerts_data[-100:]
+            
+            # Store explanations data
+            elif topic.startswith("explanations/"):
+                # Parse topic: explanations/<alertId>
+                topic_parts = topic.split('/')
+                if len(topic_parts) == 2:
+                    payload['alertId'] = topic_parts[1]
+                
+                # Store in a thread-safe way
+                if hasattr(self, '_explanations_data'):
+                    self._explanations_data.append(payload)
+                    # Keep only last 50 explanations
+                    if len(self._explanations_data) > 50:
+                        self._explanations_data = self._explanations_data[-50:]
             
             # Store audit data
             elif topic == "audit/actions":
@@ -664,6 +681,7 @@ def main():
                         # Sync data from MQTT client to session state
                         st.session_state.telemetry_data = mqtt_client._telemetry_data.copy()
                         st.session_state.alerts_data = mqtt_client._alerts_data.copy()
+                        st.session_state.explanations_data = mqtt_client._explanations_data.copy()
                         st.session_state.audit_data = mqtt_client._audit_data.copy()
                     else:
                         st.session_state.connection_status = "failed"
@@ -693,6 +711,7 @@ def main():
                         # Sync data from MQTT client to session state
                         st.session_state.telemetry_data = mqtt_client._telemetry_data.copy()
                         st.session_state.alerts_data = mqtt_client._alerts_data.copy()
+                        st.session_state.explanations_data = mqtt_client._explanations_data.copy()
                         st.session_state.audit_data = mqtt_client._audit_data.copy()
                     else:
                         st.session_state.connection_status = "failed"
@@ -784,6 +803,46 @@ def main():
         # Add control buttons for alerts
         if not alerts_data.empty:
             create_control_buttons(alerts_data)
+    
+    # Display LLM Explanations
+    with col2:
+        st.subheader("🤖 AI Explanations")
+        if st.session_state.explanations_data:
+            # Create explanations table
+            explanations_df = pd.DataFrame(st.session_state.explanations_data)
+            if not explanations_df.empty:
+                # Format timestamp
+                explanations_df['timestamp'] = pd.to_datetime(explanations_df['timestamp']).dt.strftime('%H:%M:%S')
+                
+                # Select columns for display
+                display_columns = ['timestamp', 'alertId', 'text', 'confidence']
+                if all(col in explanations_df.columns for col in display_columns):
+                    explanations_df = explanations_df[display_columns]
+                    
+                    # Create HTML table for explanations
+                    html_table = "<table style='width: 100%; border-collapse: collapse;'>"
+                    html_table += "<tr style='background-color: #f0f0f0;'>"
+                    html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Time</th>"
+                    html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Alert ID</th>"
+                    html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Explanation</th>"
+                    html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Confidence</th>"
+                    html_table += "</tr>"
+                    
+                    for _, row in explanations_df.iterrows():
+                        html_table += "<tr>"
+                        html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['timestamp']}</td>"
+                        html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['alertId']}</td>"
+                        html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['text']}</td>"
+                        confidence = row.get('confidence', 'N/A')
+                        if isinstance(confidence, (int, float)):
+                            confidence = f"{confidence:.1%}"
+                        html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{confidence}</td>"
+                        html_table += "</tr>"
+                    
+                    html_table += "</table>"
+                    st.markdown(html_table, unsafe_allow_html=True)
+        else:
+            st.info("No AI explanations available yet. Connect to MQTT to receive explanations.")
     
     # Additional information
     st.subheader("📋 System Information")
