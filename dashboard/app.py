@@ -22,7 +22,8 @@ import threading
 import queue
 
 # Environment configuration
-MQTT_HOST = os.getenv('MQTT_HOST', 'localhost')  # Default to localhost for external access
+# Use 'mosquitto' when running in container, 'localhost' when running externally
+MQTT_HOST = os.getenv('MQTT_HOST', 'mosquitto' if os.path.exists('/.dockerenv') else 'localhost')
 MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
 MQTT_USERNAME = os.getenv('MQTT_USERNAME', 'dashboard')
 MQTT_PASSWORD = os.getenv('MQTT_PASSWORD', 'dashboard123')
