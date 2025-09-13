@@ -110,6 +110,12 @@ test: ## Run all tests
 	@echo "$(BLUE)2. OPC UA Gateway Test$(NC)"
 	@make test-gateway
 	@echo ""
+	@echo "$(BLUE)3. Anomaly Detection Tests$(NC)"
+	@make test-anomaly
+	@echo ""
+	@echo "$(BLUE)4. AI Explainer Tests$(NC)"
+	@make test-explainer
+	@echo ""
 	@echo "$(GREEN)✓ All tests completed$(NC)"
 
 test-mqtt: ## Test MQTT broker connectivity
@@ -140,23 +146,23 @@ quick-start: setup start ## Quick start: setup and start all services
 quick-test: start test ## Quick test: start services and run tests
 quick-restart: stop start ## Quick restart: stop and start all services
 
-test-the166: ## Test THE-166 AI Explainer service
-	@echo "$(BLUE)Testing THE-166 AI Explainer service...$(NC)"
-	@if [ -f "tests/the166/run_tests.py" ]; then \
-		python3 tests/the166/run_tests.py; \
-	else \
-		echo "$(YELLOW)No THE-166 tests found$(NC)"; \
-	fi
-	@echo "$(GREEN)✓ THE-166 tests completed$(NC)"
-
-test-the66: ## Test THE-66 Anomaly Injection and Alert Validation
-	@echo "$(BLUE)Testing THE-66 Anomaly Injection and Alert Validation...$(NC)"
+test-anomaly: ## Test anomaly detection and injection
+	@echo "$(BLUE)Testing anomaly detection and injection...$(NC)"
 	@if [ -f "tests/the66/run_tests.py" ]; then \
 		python3 tests/the66/run_tests.py; \
 	else \
-		echo "$(YELLOW)No THE-66 tests found$(NC)"; \
+		echo "$(YELLOW)No anomaly tests found$(NC)"; \
 	fi
-	@echo "$(GREEN)✓ THE-66 tests completed$(NC)"
+	@echo "$(GREEN)✓ Anomaly tests completed$(NC)"
+
+test-explainer: ## Test AI explainer service
+	@echo "$(BLUE)Testing AI explainer service...$(NC)"
+	@if [ -f "tests/the166/run_tests.py" ]; then \
+		python3 tests/the166/run_tests.py; \
+	else \
+		echo "$(YELLOW)No explainer tests found$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ Explainer tests completed$(NC)"
 
 ## Development
 dev: ## Start development environment
@@ -190,4 +196,4 @@ info: ## Show project information
 	@echo "  - docs/Architecture.md"
 	@echo "  - docs/Quickstart_Guide.md"
 
-.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-the166 test-the66 dev info test test-opcua test-gateway test-mqtt test-integration
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration
