@@ -188,7 +188,7 @@ services:
       mosquitto:
         condition: service_started
     environment:
-      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_HOST=${MQTT_HOST:-localhost}
       - MQTT_PORT=${MQTT_PORT:-1883}
       - MQTT_USERNAME=${MQTT_USERNAME_DASHBOARD:-dashboard}
       - MQTT_PASSWORD=${MQTT_PASSWORD_DASHBOARD:-dashboard123}
