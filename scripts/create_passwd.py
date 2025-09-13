@@ -16,7 +16,7 @@ def create_password_file():
         "detector": "detectorpass",
         "explainer": "explainerpass",
         "policy": "policypass",
-        "dashboard": "dashboardpass"
+        "dashboard": "dashboard123"
     }
     
     # Ensure mosquitto directory exists
