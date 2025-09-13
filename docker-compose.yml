@@ -4,6 +4,7 @@
 # 
 # Documentation: docs/Project_README.md
 # MQTT Configuration: docs/MQTT_Configuration.md
+# Environment: Copy env.example to .env and customize
 
 services:
   # Mock OPC UA Server for development and testing
@@ -13,6 +14,14 @@ services:
     ports:
       - "4840:4840"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
     networks:
       - ghostmesh-network
 
@@ -30,12 +39,14 @@ services:
     environment:
       - MOSQUITTO_USERNAME=mosquitto
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "test", "-m", "healthcheck", "-u", "iot", "-P", "iotpass"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - ghostmesh-network
 
@@ -45,15 +56,23 @@ services:
     container_name: ghostmesh-gateway
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
       mock-opcua:
         condition: service_started
     environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=gateway
-      - MQTT_PASSWORD=gatewaypass
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_GATEWAY:-gateway}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_GATEWAY:-gatewaypass}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
     networks:
       - ghostmesh-network
 
@@ -63,14 +82,22 @@ services:
     container_name: ghostmesh-detector
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
     environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=iot
-      - MQTT_PASSWORD=iotpass
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_IOT:-iot}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_IOT:-iotpass}
       - MQTT_QOS=1
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
     networks:
       - ghostmesh-network
 
@@ -80,14 +107,22 @@ services:
     container_name: ghostmesh-policy
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
     environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=iot
-      - MQTT_PASSWORD=iotpass
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_IOT:-iot}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_IOT:-iotpass}
       - MQTT_QOS=1
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
     networks:
       - ghostmesh-network
 
@@ -97,19 +132,27 @@ services:
     container_name: ghostmesh-explainer
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
       llm-server:
-        condition: service_healthy
+        condition: service_started
     environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=explainer
-      - MQTT_PASSWORD=explainerpass
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_EXPLAINER:-explainer}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_EXPLAINER:-explainerpass}
       - MQTT_QOS=1
-      - LLM_SERVER_URL=http://llm-server:8080
-      - DEFAULT_USER_TYPE=hybrid
-      - EXPLANATION_TIMEOUT=10
+      - LLM_SERVER_URL=${LLM_SERVER_URL:-http://llm-server:8080}
+      - DEFAULT_USER_TYPE=${DEFAULT_USER_TYPE:-hybrid}
+      - EXPLANATION_TIMEOUT=${EXPLANATION_TIMEOUT:-10}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
     networks:
       - ghostmesh-network
 
@@ -122,16 +165,18 @@ services:
     volumes:
       - llm_models:/models
     environment:
-      - MODEL_PATH=/models/tinyllama-1.1b-chat.gguf
+      - MODEL_PATH=${MODEL_PATH:-/models/tinyllama-1.1b-chat.gguf}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '1.0'
     networks:
       - ghostmesh-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   # Streamlit Dashboard - Implemented in THE-61
   dashboard:
@@ -141,13 +186,24 @@ services:
       - "8501:8501"
     depends_on:
       mosquitto:
-        condition: service_healthy
+        condition: service_started
     environment:
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=dashboard
-      - MQTT_PASSWORD=dashboard123
+      - MQTT_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_DASHBOARD:-dashboard}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_DASHBOARD:-dashboard123}
+      - STREAMLIT_SERVER_HEADLESS=${STREAMLIT_SERVER_HEADLESS:-true}
+      - STREAMLIT_SERVER_ENABLE_CORS=${STREAMLIT_SERVER_ENABLE_CORS:-false}
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=${STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION:-false}
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
     networks:
       - ghostmesh-network
 

@@ -1,26 +1,46 @@
-FROM python:3.11-slim
+# Multi-stage build for minimal image size
+FROM python:3.11-slim as builder
 
-WORKDIR /app
-
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Production stage
+FROM python:3.11-slim
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
 COPY simple_mock_server.py .
 
-# Create non-root user
-RUN useradd -m -u 1000 mockuser && chown -R mockuser:mockuser /app
-USER mockuser
+# Change ownership to non-root user
+RUN chown -R appuser:appuser /app
+USER appuser
 
 # Expose OPC UA port
 EXPOSE 4840
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import socket; s = socket.socket(); s.connect(('localhost', 4840)); s.close()" || exit 1
 
 # Run the simple mock server
 CMD ["python", "simple_mock_server.py"]

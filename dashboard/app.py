@@ -559,13 +559,13 @@ def main():
         - Dashboard: ✅ Live
         """)
     
-    # Auto-refresh with optimized rate (1-2 Hz)
+    # Auto-refresh with optimized rate (1-2 Hz) for Raspberry Pi performance
     if st.session_state.mqtt_connected:
-        time.sleep(0.5)  # 2 Hz refresh rate
+        time.sleep(0.5)  # 2 Hz refresh rate - optimized for Pi 5
         st.rerun()
     else:
-        # Slower refresh when not connected
-        time.sleep(2)
+        # Slower refresh when not connected to reduce CPU usage
+        time.sleep(2)  # 0.5 Hz refresh rate when disconnected
         st.rerun()
 
 if __name__ == "__main__":
