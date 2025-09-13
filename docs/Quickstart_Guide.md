@@ -55,6 +55,7 @@ This command will:
 - Start the MQTT broker
 - Start the OPC UA to MQTT gateway
 - Start the anomaly detector
+- Start the policy engine
 - Start the Streamlit dashboard
 - Verify all services are running
 
@@ -81,6 +82,7 @@ After successful setup, you'll have these services running:
 | **MQTT Broker** | 1883 | Message broker with authentication |
 | **OPC UA Gateway** | - | Converts OPC UA data to MQTT telemetry |
 | **Anomaly Detector** | - | Rolling z-score anomaly detection |
+| **Policy Engine** | - | Enforces security actions and audit logging |
 | **Streamlit Dashboard** | 8501 | Real-time monitoring interface |
 
 ## Verify Data Flow

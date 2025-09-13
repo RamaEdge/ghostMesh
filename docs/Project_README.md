@@ -96,10 +96,18 @@ GhostMesh provides invisible AI defense at the edge by:
 - Performance optimized for Raspberry Pi
 - Containerized deployment with health checks
 
+**Policy Engine (THE-63)**
+- MQTT subscription to alerts and control command topics
+- App-layer blocking mechanism with state tracking
+- Comprehensive audit logging with unique action IDs
+- Support for isolate, throttle, and unblock commands
+- Auto-policy enforcement for high severity alerts
+- Command validation and error handling
+- Audit event publishing to `audit/actions` topic
+- Performance optimized for Raspberry Pi
+
 ### 🔄 Planned Features
 - **AI Explainer**: LLM-based risk explanation for detected anomalies
-- **Policy Engine**: Automated response actions (throttle/isolate/unblock)
-- **Streamlit Dashboard**: Real-time monitoring and control interface
 
 ## Quick Start
 
