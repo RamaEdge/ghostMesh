@@ -260,7 +260,7 @@ class AnomalyDetectorService:
         
         # Create MQTT client
         self.mqtt_client = mqtt.Client()
-        # self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
+        self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
         self.mqtt_client.on_connect = self.on_connect
         self.mqtt_client.on_message = self.on_message
         self.mqtt_client.on_disconnect = self.on_disconnect
