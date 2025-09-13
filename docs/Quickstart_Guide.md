@@ -54,6 +54,8 @@ This command will:
 - Start the mock OPC UA server
 - Start the MQTT broker
 - Start the OPC UA to MQTT gateway
+- Start the anomaly detector
+- Start the Streamlit dashboard
 - Verify all services are running
 
 ### 3. Verify Installation
@@ -77,7 +79,9 @@ After successful setup, you'll have these services running:
 |---------|------|-------------|
 | **Mock OPC UA Server** | 4840 | Simulates industrial equipment data |
 | **MQTT Broker** | 1883 | Message broker with authentication |
-| **OPC UA Gateway** | - | Translates OPC UA data to MQTT |
+| **OPC UA Gateway** | - | Converts OPC UA data to MQTT telemetry |
+| **Anomaly Detector** | - | Rolling z-score anomaly detection |
+| **Streamlit Dashboard** | 8501 | Real-time monitoring interface |
 
 ## Verify Data Flow
 
