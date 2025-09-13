@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
 GhostMesh AI Explainer Service
-Intelligent Alert Explanation Generation
+LLM-Powered Alert Explanation Generation
 
 This service processes security alerts from the anomaly detector and generates
-human-readable explanations of potential security risks, helping operators
-understand and respond to threats effectively.
+intelligent, context-aware explanations using local LLM integration via llama.cpp.
 
 Features:
 - Real-time alert processing from MQTT
-- Context-aware explanation generation
+- LLM-powered explanation generation
+- Multiple prompt templates for different user types
 - Confidence scoring and risk assessment
+- Graceful fallback when LLM is unavailable
 - Integration with GhostMesh dashboard
 """
 
@@ -20,9 +21,11 @@ import os
 import time
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Any
 
 import paho.mqtt.client as mqtt
+
+from llm_service import LLMService, LLMConfig
 
 # Configure logging
 logging.basicConfig(
@@ -33,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class AIExplainer:
-    """AI Explainer service for generating alert explanations."""
+    """AI Explainer service for generating intelligent alert explanations using LLM."""
     
     def __init__(self):
         self.mqtt_client = None
@@ -46,18 +49,31 @@ class AIExplainer:
         self.mqtt_password = os.getenv('MQTT_PASSWORD', 'explainerpass')
         self.mqtt_qos = int(os.getenv('MQTT_QOS', '1'))
         
-        # Explanation configuration
+        # LLM configuration
+        self.llm_server_url = os.getenv('LLM_SERVER_URL', 'http://localhost:8080')
+        self.default_user_type = os.getenv('DEFAULT_USER_TYPE', 'hybrid')
         self.explanation_timeout = int(os.getenv('EXPLANATION_TIMEOUT', '5'))
+        
+        # Initialize LLM service
+        llm_config = LLMConfig(
+            server_url=self.llm_server_url,
+            timeout=self.explanation_timeout
+        )
+        self.llm_service = LLMService(llm_config)
         
         # Processing statistics
         self.stats = {
             'alerts_processed': 0,
             'explanations_generated': 0,
+            'llm_explanations': 0,
+            'fallback_explanations': 0,
             'errors': 0,
             'start_time': time.time()
         }
         
         logger.info(f"Initialized AI Explainer with MQTT: {self.mqtt_host}:{self.mqtt_port}")
+        logger.info(f"LLM Service Available: {self.llm_service.is_available()}")
+        logger.info(f"Available Templates: {self.llm_service.get_available_templates()}")
     
     def on_connect(self, client, userdata, flags, rc):
         """Handle MQTT connection events."""
@@ -85,7 +101,7 @@ class AIExplainer:
             self.stats['errors'] += 1
     
     def _process_alert(self, topic: str, alert_data: Dict) -> None:
-        """Process an alert and generate an explanation."""
+        """Process an alert and generate an explanation using LLM."""
         try:
             self.stats['alerts_processed'] += 1
             
@@ -94,210 +110,187 @@ class AIExplainer:
             asset_id = alert_data.get('assetId', 'unknown')
             signal = alert_data.get('signal', 'unknown')
             severity = alert_data.get('severity', 'unknown')
-            current_value = alert_data.get('current', 0)
-            reason = alert_data.get('reason', 'Anomaly detected')
             
             logger.info(f"Processing alert {alert_id} for {asset_id} - {signal} ({severity})")
             
-            # Generate explanation
-            explanation = self._generate_explanation(
-                alert_id, asset_id, signal, severity, current_value, reason
-            )
+            # Generate explanation using LLM
+            explanation = self._generate_llm_explanation(alert_data)
             
             # Publish explanation
             self._publish_explanation(alert_id, explanation)
             
             self.stats['explanations_generated'] += 1
             
+            # Update statistics based on explanation source
+            if explanation.get('source') == 'llm':
+                self.stats['llm_explanations'] += 1
+            else:
+                self.stats['fallback_explanations'] += 1
+            
         except Exception as e:
             logger.error(f"Error processing alert {alert_data.get('alertId', 'unknown')}: {e}")
             self.stats['errors'] += 1
     
-    def _generate_explanation(self, alert_id: str, asset_id: str, signal: str, 
-                            severity: str, current_value: float, reason: str) -> Dict:
-        """Generate an intelligent explanation for an alert."""
+    def _generate_llm_explanation(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate explanation using LLM service."""
+        try:
+            # Determine user type based on alert severity or use default
+            user_type = self._determine_user_type(alert_data)
+            
+            # Generate explanation using LLM
+            explanation = self.llm_service.generate_explanation(alert_data, user_type)
+            
+            logger.info(f"Generated {explanation.get('source', 'unknown')} explanation for {alert_data.get('alertId', 'unknown')}")
+            
+            return explanation
+            
+        except Exception as e:
+            logger.error(f"Error generating LLM explanation: {e}")
+            # Return fallback explanation
+            return self._generate_fallback_explanation(alert_data)
+    
+    def _determine_user_type(self, alert_data: Dict[str, Any]) -> str:
+        """Determine the appropriate user type for explanation generation."""
+        severity = alert_data.get('severity', 'medium').lower()
+        signal = alert_data.get('signal', '').lower()
         
-        # Base explanation components
-        explanation_parts = []
-        confidence = 0.8  # Base confidence
-        risk_level = severity.lower()
-        recommended_actions = []
+        # High severity alerts might need operator-focused explanations
+        if severity == 'high':
+            return 'operator'
         
-        # Asset-specific context
-        asset_context = self._get_asset_context(asset_id)
+        # Technical signals might benefit from analyst explanations
+        if signal in ['vibration', 'pressure', 'voltage', 'current']:
+            return 'analyst'
         
-        # Signal-specific analysis
-        signal_analysis = self._analyze_signal(signal, current_value, severity)
+        # Default to hybrid for balanced explanations
+        return self.default_user_type
+    
+    def _generate_fallback_explanation(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate a simple fallback explanation when LLM is not available."""
+        alert_id = alert_data.get('alertId', 'unknown')
+        asset_id = alert_data.get('assetId', 'unknown')
+        signal = alert_data.get('signal', 'unknown')
+        severity = alert_data.get('severity', 'medium')
+        current_value = alert_data.get('current', 0)
+        reason = alert_data.get('reason', 'Anomaly detected')
         
-        # Build explanation text
-        explanation_parts.append(f"{signal_analysis['description']} detected on {asset_id}")
-        
-        if asset_context:
-            explanation_parts.append(f"({asset_context})")
-        
-        explanation_parts.append(signal_analysis['impact'])
-        
-        if signal_analysis['immediate_concern']:
-            explanation_parts.append(signal_analysis['immediate_concern'])
-        
-        # Generate recommendations
-        recommended_actions = signal_analysis['recommendations']
-        
-        # Adjust confidence based on signal type and severity
-        confidence = self._calculate_confidence(signal, severity, current_value)
-        
-        # Combine explanation
-        explanation_text = ". ".join(explanation_parts) + "."
+        # Simple fallback explanation
+        explanation_text = f"Security alert detected on {asset_id} for {signal} signal. "
+        explanation_text += f"Current value is {current_value}, which triggered a {severity} severity alert. "
+        explanation_text += f"Reason: {reason}. "
+        explanation_text += "Please investigate the anomaly and take appropriate action based on your operational procedures."
         
         return {
             "alertId": alert_id,
             "text": explanation_text,
-            "confidence": round(confidence, 2),
-            "riskLevel": risk_level,
-            "recommendedActions": recommended_actions,
-            "ts": datetime.now(timezone.utc).isoformat()
+            "confidence": 0.5,
+            "riskLevel": severity.lower(),
+            "userType": "fallback",
+            "recommendations": [
+                "Investigate the anomaly",
+                "Check system logs",
+                "Verify sensor readings",
+                "Follow operational procedures",
+                "Monitor for additional alerts"
+            ],
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "source": "fallback"
         }
     
-    def _get_asset_context(self, asset_id: str) -> str:
-        """Get contextual information about an asset."""
-        asset_contexts = {
-            "Press01": "hydraulic press",
-            "Press02": "hydraulic press", 
-            "Conveyor01": "conveyor belt system",
-            "Valve03": "control valve",
-            "Sensor05": "environmental sensor"
-        }
-        return asset_contexts.get(asset_id, "industrial equipment")
-    
-    def _analyze_signal(self, signal: str, value: float, severity: str) -> Dict:
-        """Analyze a signal and provide context-specific information."""
-        
-        signal_analyses = {
-            "Temperature": {
-                "description": f"Temperature anomaly ({value}°C)",
-                "impact": "This could indicate overheating, cooling system failure, or thermal stress",
-                "immediate_concern": "Immediate inspection of cooling systems and equipment status is recommended",
-                "recommendations": ["inspect_equipment", "check_cooling_system", "monitor_temperature"]
-            },
-            "Pressure": {
-                "description": f"Pressure anomaly ({value} bar)",
-                "impact": "This could indicate system pressure issues, leaks, or valve malfunctions",
-                "immediate_concern": "Check for leaks, valve positions, and system integrity",
-                "recommendations": ["check_for_leaks", "inspect_valves", "verify_system_pressure"]
-            },
-            "Speed": {
-                "description": f"Speed anomaly ({value} rpm)",
-                "impact": "This could indicate motor issues, mechanical problems, or control system faults",
-                "immediate_concern": "Inspect motor operation and mechanical components",
-                "recommendations": ["inspect_motor", "check_mechanical_components", "verify_control_signals"]
-            },
-            "Vibration": {
-                "description": f"Vibration anomaly ({value} mm/s)",
-                "impact": "This could indicate mechanical wear, misalignment, or bearing failure",
-                "immediate_concern": "Immediate mechanical inspection is recommended to prevent equipment damage",
-                "recommendations": ["inspect_bearings", "check_alignment", "monitor_vibration_trends"]
-            }
-        }
-        
-        return signal_analyses.get(signal, {
-            "description": f"{signal} anomaly ({value})",
-            "impact": "This could indicate equipment malfunction or system issues",
-            "immediate_concern": "Investigate the root cause of this anomaly",
-            "recommendations": ["investigate_anomaly", "check_equipment_status", "monitor_trends"]
-        })
-    
-    def _calculate_confidence(self, signal: str, severity: str, value: float) -> float:
-        """Calculate confidence score for the explanation."""
-        base_confidence = 0.8
-        
-        # Adjust based on signal type (some signals are more predictable)
-        signal_confidence = {
-            "Temperature": 0.9,
-            "Pressure": 0.85,
-            "Speed": 0.8,
-            "Vibration": 0.75
-        }
-        
-        # Adjust based on severity
-        severity_confidence = {
-            "low": 0.7,
-            "medium": 0.8,
-            "high": 0.9
-        }
-        
-        confidence = base_confidence
-        confidence *= signal_confidence.get(signal, 0.8)
-        confidence *= severity_confidence.get(severity.lower(), 0.8)
-        
-        # Ensure confidence is within valid range
-        return max(0.5, min(1.0, confidence))
-    
-    def _publish_explanation(self, alert_id: str, explanation: Dict) -> None:
-        """Publish explanation to MQTT."""
+    def _publish_explanation(self, alert_id: str, explanation: Dict[str, Any]) -> None:
+        """Publish explanation to MQTT topic."""
         try:
             topic = f"explanations/{alert_id}"
-            payload = json.dumps(explanation)
+            payload = json.dumps(explanation, indent=2)
             
-            self.mqtt_client.publish(topic, payload, qos=self.mqtt_qos, retain=True)
-            logger.info(f"Published explanation for alert {alert_id}")
+            result = self.mqtt_client.publish(topic, payload, qos=self.mqtt_qos, retain=True)
             
+            if result.rc == mqtt.MQTT_ERR_SUCCESS:
+                logger.info(f"Published explanation for alert {alert_id} to topic {topic}")
+            else:
+                logger.error(f"Failed to publish explanation for alert {alert_id}. Code: {result.rc}")
+                self.stats['errors'] += 1
+                
         except Exception as e:
-            logger.error(f"Failed to publish explanation for alert {alert_id}: {e}")
+            logger.error(f"Error publishing explanation for alert {alert_id}: {e}")
             self.stats['errors'] += 1
-    
-    def on_disconnect(self, client, userdata, rc):
-        """Handle MQTT disconnection events."""
-        logger.warning(f"Disconnected from MQTT broker. Code: {rc}")
-    
-    def get_stats(self) -> Dict:
-        """Get service statistics."""
-        uptime = time.time() - self.stats['start_time']
-        return {
-            **self.stats,
-            'uptime_seconds': round(uptime, 2),
-            'alerts_per_minute': round(self.stats['alerts_processed'] / (uptime / 60), 2) if uptime > 0 else 0
-        }
     
     def start(self):
         """Start the AI Explainer service."""
-        logger.info("Starting AI Explainer service...")
-        
-        # Create MQTT client
-        self.mqtt_client = mqtt.Client()
-        # self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
-        self.mqtt_client.on_connect = self.on_connect
-        self.mqtt_client.on_message = self.on_message
-        self.mqtt_client.on_disconnect = self.on_disconnect
-        
         try:
+            # Initialize MQTT client
+            self.mqtt_client = mqtt.Client()
+            self.mqtt_client.username_pw_set(self.mqtt_username, self.mqtt_password)
+            self.mqtt_client.on_connect = self.on_connect
+            self.mqtt_client.on_message = self.on_message
+            
+            # Connect to MQTT broker
             self.mqtt_client.connect(self.mqtt_host, self.mqtt_port, 60)
-            self.running = True
             self.mqtt_client.loop_start()
+            
+            self.running = True
             logger.info("AI Explainer service started successfully")
             
-            # Main service loop
+            # Keep the service running
             while self.running:
                 time.sleep(1)
                 
                 # Log statistics every 60 seconds
                 if int(time.time()) % 60 == 0:
-                    stats = self.get_stats()
-                    logger.info(f"Service stats: {stats}")
-                    
+                    self._log_statistics()
+                
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal, shutting down...")
+            self.stop()
         except Exception as e:
-            logger.error(f"Error starting service: {e}")
-            self.running = False
-        finally:
+            logger.error(f"Error starting AI Explainer service: {e}")
             self.stop()
     
     def stop(self):
         """Stop the AI Explainer service."""
+        self.running = False
+        
         if self.mqtt_client:
             self.mqtt_client.loop_stop()
             self.mqtt_client.disconnect()
-            logger.info("AI Explainer service stopped.")
+        
+        logger.info("AI Explainer service stopped")
+        self._log_final_statistics()
+    
+    def _log_statistics(self):
+        """Log current processing statistics."""
+        uptime = time.time() - self.stats['start_time']
+        alerts_per_minute = (self.stats['alerts_processed'] / uptime) * 60 if uptime > 0 else 0
+        
+        logger.info(f"Statistics - Alerts: {self.stats['alerts_processed']}, "
+                   f"Explanations: {self.stats['explanations_generated']}, "
+                   f"LLM: {self.stats['llm_explanations']}, "
+                   f"Fallback: {self.stats['fallback_explanations']}, "
+                   f"Errors: {self.stats['errors']}, "
+                   f"Rate: {alerts_per_minute:.1f}/min")
+    
+    def _log_final_statistics(self):
+        """Log final statistics when service stops."""
+        uptime = time.time() - self.stats['start_time']
+        
+        logger.info("=== Final Statistics ===")
+        logger.info(f"Uptime: {uptime:.1f} seconds")
+        logger.info(f"Alerts Processed: {self.stats['alerts_processed']}")
+        logger.info(f"Explanations Generated: {self.stats['explanations_generated']}")
+        logger.info(f"LLM Explanations: {self.stats['llm_explanations']}")
+        logger.info(f"Fallback Explanations: {self.stats['fallback_explanations']}")
+        logger.info(f"Errors: {self.stats['errors']}")
+        
+        if self.stats['alerts_processed'] > 0:
+            llm_percentage = (self.stats['llm_explanations'] / self.stats['alerts_processed']) * 100
+            logger.info(f"LLM Success Rate: {llm_percentage:.1f}%")
+
+
+def main():
+    """Main function to run the AI Explainer service."""
+    explainer = AIExplainer()
+    explainer.start()
 
 
 if __name__ == "__main__":
-    service = AIExplainer()
-    service.start()
+    main()

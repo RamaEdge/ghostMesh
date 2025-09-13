@@ -318,6 +318,29 @@ The system uses these default credentials:
 
 To change credentials, update `mosquitto/passwd` and restart services.
 
+### Hugging Face Authentication (for LLM Server)
+
+To download models from Hugging Face, you need to set up authentication:
+
+1. **Get your token** from [Hugging Face Settings](https://huggingface.co/settings/tokens)
+2. **Set up authentication**:
+   ```bash
+   make setup-hf-auth
+   ```
+3. **Edit the token file** and add your actual token:
+   ```bash
+   # Edit llm-server/.hf_token and replace 'your_huggingface_token_here' with your actual token
+   nano llm-server/.hf_token
+   ```
+4. **Build the LLM server**:
+   ```bash
+   make build-llm-server
+   ```
+
+**Model**: We use **TinyLlama-1.1B-Chat-v1.0** (~637MB) - optimized for Raspberry Pi with excellent performance for chat/instruct tasks.
+
+**Note**: The `.hf_token` file is automatically excluded from git commits for security.
+
 ---
 
 **Congratulations!** You now have GhostMesh running with real-time industrial data flowing from OPC UA to MQTT. The foundation is ready for anomaly detection, AI explanation, and policy enforcement features.

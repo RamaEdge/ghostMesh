@@ -102,3 +102,10 @@ mosquitto/passwd
 # Test data
 test-data/
 *.test.json
+
+# Hugging Face authentication token (sensitive)
+llm-server/.hf_token
+llm-server/.hf_token.template
+
+# Template files (should not be committed)
+*.template

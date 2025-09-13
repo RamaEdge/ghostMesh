@@ -4,7 +4,10 @@
 # MQTT client library
 paho-mqtt==1.6.1
 
-# Data processing and analysis (optional for future ML features)
+# HTTP client for LLM server communication
+requests==2.31.0
+
+# Data processing and analysis
 numpy==1.24.3
 pandas==2.0.3
 
