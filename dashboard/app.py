@@ -752,7 +752,34 @@ def main():
     with col2:
         st.subheader("🚨 Active Alerts")
         alerts_styled, alerts_data = create_alerts_table()
-        st.dataframe(alerts_styled, use_container_width=True)
+        
+        # Display alerts with proper HTML rendering for badges
+        if not alerts_data.empty:
+            # Create a custom HTML table for proper badge rendering
+            html_table = "<table style='width: 100%; border-collapse: collapse;'>"
+            html_table += "<tr style='background-color: #f0f0f0;'>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Time</th>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Asset</th>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Signal</th>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Severity</th>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Current</th>"
+            html_table += "<th style='padding: 8px; border: 1px solid #ddd;'>Reason</th>"
+            html_table += "</tr>"
+            
+            for _, row in alerts_styled.iterrows():
+                html_table += "<tr>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['timestamp']}</td>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['asset']}</td>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['signal']}</td>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['severity']}</td>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['current']}</td>"
+                html_table += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row['reason']}</td>"
+                html_table += "</tr>"
+            
+            html_table += "</table>"
+            st.markdown(html_table, unsafe_allow_html=True)
+        else:
+            st.info("No alerts available")
         
         # Add control buttons for alerts
         if not alerts_data.empty:
