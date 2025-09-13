@@ -539,7 +539,7 @@ def inject_anomaly():
         message = json.dumps(demo_alert)
         
         try:
-            result = st.session_state.mqtt_client.publish(topic, message, qos=1, retain=True)
+            result = st.session_state.mqtt_client.client.publish(topic, message, qos=1, retain=True)
             if result.rc == 0:  # MQTT_ERR_SUCCESS
                 print(f"✅ Demo anomaly published successfully to {topic}")
                 return True
