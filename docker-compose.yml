@@ -57,22 +57,22 @@ services:
     networks:
       - ghostmesh-network
 
-  # Placeholder services - will be implemented in subsequent issues
-  # anomaly:
-  #   build: ./anomaly
-  #   container_name: ghostmesh-detector
-  #   depends_on:
-  #     mosquitto:
-  #       condition: service_healthy
-  #   environment:
-  #     - MQTT_HOST=mosquitto
-  #     - MQTT_PORT=1883
-  #     - MQTT_USERNAME=detector
-  #     - MQTT_PASSWORD=detectorpass
-  #     - MQTT_QOS=1
-  #   restart: unless-stopped
-  #   networks:
-  #     - ghostmesh-network
+  # Anomaly Detector - Implemented in THE-62
+  anomaly:
+    build: ./anomaly
+    container_name: ghostmesh-detector
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=iotpass
+      - MQTT_QOS=1
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
 
   # policy:
   #   build: ./policy
