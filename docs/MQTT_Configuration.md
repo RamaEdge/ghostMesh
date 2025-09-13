@@ -39,6 +39,25 @@ The MQTT topics follow the GhostMesh architecture:
 
 ## Setup Instructions
 
+### Using Makefile (Recommended)
+
+1. **Complete setup:**
+   ```bash
+   make setup
+   ```
+
+2. **Start MQTT broker:**
+   ```bash
+   make start-mqtt
+   ```
+
+3. **Test connectivity:**
+   ```bash
+   make test-mqtt
+   ```
+
+### Manual Setup
+
 1. **Generate password file:**
    ```bash
    ./scripts/setup-mqtt-users.sh
@@ -46,7 +65,7 @@ The MQTT topics follow the GhostMesh architecture:
 
 2. **Start MQTT broker:**
    ```bash
-   docker compose up -d mosquitto
+   podman compose up -d mosquitto
    ```
 
 3. **Test connectivity:**

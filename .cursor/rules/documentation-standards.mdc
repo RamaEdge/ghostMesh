@@ -130,6 +130,13 @@ The root README.md should be minimal and focused:
 - Include security considerations
 - Explain default values and their implications
 
+### Makefile Documentation
+- Include comprehensive Makefile for all build, test, and deployment tasks
+- Provide clear help text for all targets
+- Use consistent naming conventions for targets
+- Include both Makefile and manual setup instructions
+- Document all available commands in project documentation
+
 ## Language and Grammar
 
 ### Capitalization

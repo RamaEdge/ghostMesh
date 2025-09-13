@@ -51,6 +51,13 @@ ghostmesh/
 - Validate configuration on service startup
 - Use YAML files for complex configurations (mapping.yaml)
 
+## Build and Development Automation
+- Use Makefile for all build, test, and deployment tasks
+- Provide comprehensive help with `make help`
+- Include both Makefile and manual setup instructions
+- Use consistent target naming conventions
+- Support both Docker and Podman container runtimes
+
 ## Error Handling Strategy
 - Implement graceful degradation for network failures
 - Use structured logging with appropriate levels

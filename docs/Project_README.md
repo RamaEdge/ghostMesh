@@ -40,8 +40,36 @@ GhostMesh provides invisible AI defense at the edge by:
 
 ```bash
 git clone <repo> && cd ghostmesh
-podman compose up -d --build
+make quick-start
 open http://<pi-ip>:8501   # Streamlit dashboard
+```
+
+### Makefile Commands
+
+The project includes a comprehensive Makefile for all development tasks:
+
+```bash
+# Setup and Configuration
+make setup         # Initial project setup
+make build         # Build all containers
+make start         # Start all services
+make stop          # Stop all services
+
+# Testing and Quality
+make test          # Run all tests
+make test-mqtt     # Test MQTT connectivity
+make lint          # Run code linting
+make format        # Format code
+
+# Monitoring
+make logs          # Show all logs
+make status        # Check service status
+make health        # Check service health
+
+# Development
+make dev           # Start development environment
+make quick-start   # Setup and start services
+make quick-test    # Start and test services
 ```
 
 ### Detailed Setup

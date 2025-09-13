@@ -6,9 +6,19 @@ GhostMesh is an edge-resident security copilot for industrial/IoT environments t
 
 ```bash
 git clone <repo> && cd ghostmesh
-./scripts/setup-mqtt-users.sh
-podman compose up -d --build
+make quick-start
 open http://<pi-ip>:8501   # Streamlit dashboard
+```
+
+### Available Commands
+
+```bash
+make help          # Show all available commands
+make setup         # Initial project setup
+make start         # Start all services
+make test          # Run all tests
+make logs          # Show service logs
+make status        # Check service status
 ```
 
 ## Documentation
