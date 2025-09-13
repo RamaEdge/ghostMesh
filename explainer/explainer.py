@@ -51,7 +51,7 @@ class AIExplainer:
         
         # LLM configuration
         self.llm_server_url = os.getenv('LLM_SERVER_URL', 'http://localhost:8080')
-        self.default_user_type = os.getenv('DEFAULT_USER_TYPE', 'hybrid')
+        self.default_user_type = os.getenv('DEFAULT_USER_TYPE', 'operator')
         self.explanation_timeout = int(os.getenv('EXPLANATION_TIMEOUT', '5'))
         
         # Initialize LLM service
@@ -136,6 +136,7 @@ class AIExplainer:
         try:
             # Determine user type based on alert severity or use default
             user_type = self._determine_user_type(alert_data)
+            logger.info(f"Using user type '{user_type}' for alert {alert_data.get('alertId', 'unknown')}")
             
             # Generate explanation using LLM
             explanation = self.llm_service.generate_explanation(alert_data, user_type)
@@ -154,16 +155,20 @@ class AIExplainer:
         severity = alert_data.get('severity', 'medium').lower()
         signal = alert_data.get('signal', '').lower()
         
-        # High severity alerts might need operator-focused explanations
+        # High severity alerts need immediate operator-focused explanations
         if severity == 'high':
             return 'operator'
         
-        # Technical signals might benefit from analyst explanations
-        if signal in ['vibration', 'pressure', 'voltage', 'current']:
+        # Medium severity alerts also benefit from operator-focused explanations
+        if severity == 'medium':
+            return 'operator'
+        
+        # Only use analyst explanations for low severity technical signals
+        if severity == 'low' and signal in ['vibration', 'pressure', 'voltage', 'current']:
             return 'analyst'
         
-        # Default to hybrid for balanced explanations
-        return self.default_user_type
+        # Default to operator for practical, actionable explanations
+        return 'operator'
     
     def _generate_fallback_explanation(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
         """Generate a simple fallback explanation when LLM is not available."""

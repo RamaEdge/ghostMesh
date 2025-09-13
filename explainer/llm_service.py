@@ -53,24 +53,26 @@ class LLMService:
         return {
             "operator": PromptTemplate(
                 name="operator",
-                system_prompt="""You are an AI assistant helping industrial operators understand security alerts. 
-Provide clear, actionable explanations that help operators make quick decisions. 
-Focus on immediate actions and safety implications. Keep explanations concise and practical.""",
-                user_prompt_template="""Analyze this security alert and provide a clear explanation for an industrial operator:
+                system_prompt="""You are an AI assistant helping industrial operators understand equipment alerts. 
+Provide clear, practical explanations that help operators make quick decisions. 
+Focus on what's happening, why it matters, and what to do about it. 
+Avoid technical jargon and statistical terms. Use plain language that operators can understand immediately.""",
+                user_prompt_template="""Explain this equipment alert in simple terms for an industrial operator:
 
-Alert Details:
-- Asset: {asset_id}
-- Signal: {signal}
-- Severity: {severity}
-- Current Value: {current_value} {unit}
-- Reason: {reason}
-- Timestamp: {timestamp}
+Equipment: {asset_id}
+Measurement: {signal}
+Alert Level: {severity}
+Current Reading: {current_value} {unit}
+What Happened: {reason}
+Time: {timestamp}
 
-Provide:
-1. What this alert means in simple terms
-2. Immediate safety concerns
-3. Recommended actions
-4. When to escalate
+Provide a clear explanation that answers:
+1. What is happening with the equipment?
+2. Is this dangerous or just unusual?
+3. What should the operator do right now?
+4. When should they call for help?
+
+Keep it simple and practical. Avoid technical terms like z-scores, standard deviations, or statistical analysis.
 
 Explanation:""",
                 max_tokens=200,
@@ -109,25 +111,27 @@ Technical Analysis:""",
             
             "hybrid": PromptTemplate(
                 name="hybrid",
-                system_prompt="""You are an AI assistant helping both operators and analysts understand security alerts. 
-Provide explanations that are technically accurate but accessible to different audiences. 
-Balance detail with clarity, and include both immediate actions and deeper analysis.""",
-                user_prompt_template="""Analyze this industrial security alert:
+                system_prompt="""You are an AI assistant helping industrial operators and analysts understand equipment alerts. 
+Provide clear, practical explanations that focus on what's happening and what to do about it. 
+Use plain language that operators can understand, but include enough detail for analysts. 
+Avoid technical jargon and statistical terms unless absolutely necessary.""",
+                user_prompt_template="""Explain this equipment alert in clear, practical terms:
 
-Alert Details:
-- Asset: {asset_id}
-- Signal: {signal}
-- Severity: {severity}
-- Current Value: {current_value} {unit}
-- Reason: {reason}
-- Timestamp: {timestamp}
+Equipment: {asset_id}
+Measurement: {signal}
+Alert Level: {severity}
+Current Reading: {current_value} {unit}
+What Happened: {reason}
+Time: {timestamp}
 
-Provide a comprehensive explanation including:
-1. Executive Summary (what happened)
-2. Technical Details (why it happened)
-3. Immediate Actions (what to do now)
-4. Risk Assessment (potential impact)
-5. Recommendations (next steps)
+Provide a clear explanation that covers:
+1. What is happening with the equipment (in simple terms)
+2. Why this is concerning or unusual
+3. Immediate actions the operator should take
+4. Potential risks if not addressed
+5. When to escalate or call for help
+
+Keep explanations practical and actionable. Avoid technical terms like z-scores, standard deviations, or statistical analysis.
 
 Explanation:""",
                 max_tokens=300,
