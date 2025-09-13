@@ -1,7 +1,8 @@
 # GhostMesh — Edge AI Security Copilot
 **Subtitle:** Invisible protection for IoT at the edge  
 **Target:** Raspberry Pi 5 (8 GB) + 1 TB SSD • MQTT bus • Python services  
-**Version:** 1.0 (Hackathon) • **Date:** 2025‑09‑12
+**Version:** 1.0 (Hackathon) • **Date:** 2025‑09‑12  
+**Status:** ✅ OPC UA Gateway Implemented and Operational
 
 ---
 
@@ -25,12 +26,13 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
   └─ OPC UA Devices (real/sim)
 
 [Edge Node: Raspberry Pi 5]
-  ├─ OPC UA → MQTT Gateway (opcua2mqtt)
-  ├─ MQTT Broker (Mosquitto)
-  ├─ Anomaly Detector (z‑score/IForest)
-  ├─ AI Explainer (local LLM/API)
-  ├─ Policy Engine (isolate/throttle/unblock)
-  └─ Dashboard (Streamlit)
+  ├─ ✅ OPC UA → MQTT Gateway (opcua2mqtt) - OPERATIONAL
+  ├─ ✅ MQTT Broker (Mosquitto) - OPERATIONAL
+  ├─ ✅ Mock OPC UA Server - OPERATIONAL
+  ├─ 🔄 Anomaly Detector (z‑score/IForest) - PLANNED
+  ├─ 🔄 AI Explainer (local LLM/API) - PLANNED
+  ├─ 🔄 Policy Engine (isolate/throttle/unblock) - PLANNED
+  └─ 🔄 Dashboard (Streamlit) - PLANNED
 
 [Operator]
   └─ Browser → Dashboard
@@ -39,14 +41,40 @@ GhostMesh is an edge‑resident security copilot for industrial/IoT environments
 
 ---
 
-## 3) End‑to‑End Data Flow
-**Sequence**
-1) **OPC UA** device value changes → Gateway subscription receives updates.  
-2) Gateway normalizes to **JSON** and publishes to **MQTT** topics `factory/<line>/<asset>/<signal>`.  
-3) **Anomaly Detector** subscribes and computes rolling baselines; emits **alerts** to `alerts/<asset>/<signal>`.  
-4) **AI Explainer** subscribes to alerts, generates short text explanations → `explanations/<alertId>`.  
-5) **Dashboard** renders telemetry/alerts/explanations; operator can publish **control** commands to `control/<asset>/<command>`.  
-6) **Policy Engine** subscribes to alerts/control and enforces block/throttle; publishes **audit** events `audit/actions`.
+## 3) Current Implementation Status
+
+### ✅ Operational Components
+**OPC UA to MQTT Gateway (THE-60)**
+- Async OPC UA client using `asyncua` library
+- 11 node mappings for industrial equipment simulation
+- Real-time data flow at ~1Hz
+- JSON telemetry messages with structured schema
+- MQTT topics following `factory/<line>/<asset>/<signal>` pattern
+- Retained state messages to `state/<asset>` topics
+- Comprehensive error handling and reconnection logic
+
+**Infrastructure**
+- Mock OPC UA server simulating Press01, Press02, and Conveyor01 equipment
+- MQTT broker with authentication and ACLs
+- Containerized services with Podman
+- Comprehensive Makefile for build, test, and deployment
+
+### 🔄 Planned Components
+- Anomaly Detector (rolling z-score analysis)
+- AI Explainer (LLM-based risk explanation)
+- Policy Engine (automated response actions)
+- Streamlit Dashboard (real-time monitoring UI)
+
+## 4) End‑to‑End Data Flow
+**Current Implementation (Steps 1-2)**
+1) **OPC UA** device value changes → Gateway subscription receives updates. ✅
+2) Gateway normalizes to **JSON** and publishes to **MQTT** topics `factory/<line>/<asset>/<signal>`. ✅
+
+**Planned Implementation (Steps 3-6)**
+3) **Anomaly Detector** subscribes and computes rolling baselines; emits **alerts** to `alerts/<asset>/<signal>`. 🔄
+4) **AI Explainer** subscribes to alerts, generates short text explanations → `explanations/<alertId>`. 🔄
+5) **Dashboard** renders telemetry/alerts/explanations; operator can publish **control** commands to `control/<asset>/<command>`. 🔄
+6) **Policy Engine** subscribes to alerts/control and enforces block/throttle; publishes **audit** events `audit/actions`. 🔄
 
 **Topics**
 - Telemetry: `factory/<line>/<asset>/<signal>`  

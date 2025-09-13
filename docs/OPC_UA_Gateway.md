@@ -1,10 +1,21 @@
 # GhostMesh OPC UA to MQTT Gateway
 
+**Status: ✅ IMPLEMENTED AND OPERATIONAL**
+
 The OPC UA to MQTT Gateway is a critical component of GhostMesh that bridges industrial OPC UA devices with the MQTT messaging system, enabling real-time telemetry data flow for anomaly detection and monitoring.
 
 ## Overview
 
 The gateway subscribes to OPC UA nodes, normalizes the data into JSON format, and publishes telemetry messages to MQTT topics following the GhostMesh architecture. It also publishes retained state messages for each asset.
+
+**Current Implementation:**
+- ✅ Async OPC UA client with proper error handling
+- ✅ 11 node mappings for industrial equipment simulation
+- ✅ Real-time data flow at ~1Hz
+- ✅ JSON telemetry messages with structured schema
+- ✅ MQTT topics following `factory/<line>/<asset>/<signal>` pattern
+- ✅ Retained state messages to `state/<asset>` topics
+- ✅ Comprehensive reconnection logic
 
 ## Architecture
 
@@ -23,6 +34,56 @@ The gateway subscribes to OPC UA nodes, normalizes the data into JSON format, an
 - **Error Handling**: Robust reconnection and error recovery
 - **Health Monitoring**: Built-in health checks and logging
 
+## Current Implementation Details
+
+### Live Data Flow
+The gateway is currently operational with the following configuration:
+
+**OPC UA Server**: Mock server simulating industrial equipment
+- **Endpoint**: `opc.tcp://mock-opcua:4840`
+- **Security**: None (for development)
+- **Namespace**: 2 (custom industrial namespace)
+
+**Node Mappings**: 11 active subscriptions
+- **Press01**: Temperature, Pressure, Vibration, Status
+- **Press02**: Temperature, Pressure, Vibration, Status  
+- **Conveyor01**: Speed, Load, Status
+
+**MQTT Topics**: Following `factory/<line>/<asset>/<signal>` pattern
+- `factory/A/press01/temperature`
+- `factory/A/press01/pressure`
+- `factory/A/press01/vibration`
+- `factory/A/press01/status`
+- `factory/A/press02/*`
+- `factory/B/conveyor01/*`
+
+**Telemetry Message Format**:
+```json
+{
+  "assetId": "press01",
+  "line": "A",
+  "signal": "temperature",
+  "value": 33.66,
+  "unit": "C",
+  "ts": "2025-09-13T10:25:52.797652+00:00",
+  "quality": "Good",
+  "source": "opcua",
+  "seq": 347
+}
+```
+
+### Verification Commands
+```bash
+# Check gateway status
+make status
+
+# View live telemetry data
+timeout 10s podman exec ghostmesh-mosquitto mosquitto_sub -h localhost -u gateway -P gatewaypass -t "factory/+/+/+" -C 5 -W 5
+
+# View gateway logs
+make logs-gateway
+```
+
 ## Configuration
 
 ### Mapping Configuration (mapping.yaml)
@@ -32,11 +93,14 @@ The gateway uses a YAML configuration file to define OPC UA server settings, MQT
 ```yaml
 # OPC UA server configuration
 opcua:
-  endpoint: "opc.tcp://localhost:4840"
-  security_policy: "Basic256Sha256"
-  security_mode: "Sign"
-  username: "edge"
-  password: "edgepass"
+  endpoint: "opc.tcp://mock-opcua:4840"
+  security_policy: "None"
+  security_mode: "None"
+  username: null
+  password: null
+  session_timeout: 60000
+  connection_timeout: 10000
+  reconnect_interval: 5000
 
 # MQTT broker configuration
 mqtt:
@@ -46,6 +110,8 @@ mqtt:
   password: "gatewaypass"
   qos: 1
   retain_state: true
+  keepalive: 60
+  reconnect_interval: 5
 
 # Node mappings
 mappings:
