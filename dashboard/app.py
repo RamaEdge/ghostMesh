@@ -16,9 +16,16 @@ import pandas as pd
 import paho.mqtt.client as mqtt
 import json
 import time
+import os
 from datetime import datetime, timedelta
 import threading
 import queue
+
+# Environment configuration
+MQTT_HOST = os.getenv('MQTT_HOST', 'localhost')
+MQTT_PORT = int(os.getenv('MQTT_PORT', '1883'))
+MQTT_USERNAME = os.getenv('MQTT_USERNAME', 'dashboard')
+MQTT_PASSWORD = os.getenv('MQTT_PASSWORD', 'dashboard123')
 
 # Page configuration
 st.set_page_config(
@@ -269,8 +276,14 @@ class MQTTClient:
         st.session_state.mqtt_connected = False
         st.warning("⚠️ Disconnected from MQTT broker")
         
-    def connect(self, host="localhost", port=1883, username="dashboard", password="dashboard123"):
+    def connect(self, host=None, port=None, username=None, password=None):
         try:
+            # Use environment variables as defaults
+            host = host or MQTT_HOST
+            port = port or MQTT_PORT
+            username = username or MQTT_USERNAME
+            password = password or MQTT_PASSWORD
+            
             self.client.username_pw_set(username, password)
             self.client.connect(host, port, 60)
             self.client.loop_start()
@@ -608,21 +621,39 @@ def main():
         
         # MQTT Connection Controls
         st.subheader("⚙️ MQTT Settings")
-        mqtt_host = st.text_input("MQTT Host", value="localhost")
-        mqtt_port = st.number_input("MQTT Port", value=1883, min_value=1, max_value=65535)
-        mqtt_username = st.text_input("Username", value="iot")
-        mqtt_password = st.text_input("Password", value="iotpass", type="password")
+        mqtt_host = st.text_input("MQTT Host", value=MQTT_HOST)
+        mqtt_port = st.number_input("MQTT Port", value=MQTT_PORT, min_value=1, max_value=65535)
+        mqtt_username = st.text_input("Username", value=MQTT_USERNAME)
+        mqtt_password = st.text_input("Password", value=MQTT_PASSWORD, type="password")
         
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Connect"):
-                mqtt_client = MQTTClient()
-                mqtt_client.connect(mqtt_host, mqtt_port, mqtt_username, mqtt_password)
-                st.session_state.mqtt_client = mqtt_client
+                with st.spinner("Connecting to MQTT..."):
+                    mqtt_client = MQTTClient()
+                    if mqtt_client.connect(mqtt_host, mqtt_port, mqtt_username, mqtt_password):
+                        st.session_state.mqtt_client = mqtt_client
+                        st.success("✅ Connected to MQTT broker")
+                    else:
+                        st.error("❌ Failed to connect to MQTT broker")
         
         with col2:
             if st.button("Disconnect") and 'mqtt_client' in st.session_state:
-                st.session_state.mqtt_client.disconnect()
+                with st.spinner("Disconnecting..."):
+                    st.session_state.mqtt_client.disconnect()
+                    st.session_state.mqtt_connected = False
+                    st.success("✅ Disconnected from MQTT broker")
+        
+        # Auto-connect if not connected and environment variables are set
+        if not st.session_state.mqtt_connected and MQTT_HOST != 'localhost':
+            if st.button("🔄 Auto-Connect", help="Connect using environment variables"):
+                with st.spinner("Auto-connecting to MQTT..."):
+                    mqtt_client = MQTTClient()
+                    if mqtt_client.connect():
+                        st.session_state.mqtt_client = mqtt_client
+                        st.success("✅ Auto-connected to MQTT broker")
+                    else:
+                        st.error("❌ Failed to auto-connect to MQTT broker")
         
         # Refresh controls
         st.subheader("Data Controls")
