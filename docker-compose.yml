@@ -91,6 +91,24 @@ services:
     networks:
       - ghostmesh-network
 
+  # AI Explainer Service - Implemented in THE-166
+  explainer:
+    build: ./explainer
+    container_name: ghostmesh-explainer
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=explainer
+      - MQTT_PASSWORD=explainerpass
+      - MQTT_QOS=1
+      - EXPLANATION_TIMEOUT=5
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+
   # Streamlit Dashboard - Implemented in THE-61
   dashboard:
     build: ./dashboard

@@ -63,6 +63,11 @@ build-policy: ## Build policy engine container
 	$(COMPOSE_CMD) build policy
 	@echo "$(GREEN)✓ Policy engine container built$(NC)"
 
+build-explainer: ## Build AI explainer container
+	@echo "$(BLUE)Building AI explainer container...$(NC)"
+	$(COMPOSE_CMD) build explainer
+	@echo "$(GREEN)✓ AI explainer container built$(NC)"
+
 ## Service Management
 start: ## Start all services
 	@echo "$(BLUE)Starting GhostMesh services...$(NC)"
@@ -135,6 +140,15 @@ quick-start: setup start ## Quick start: setup and start all services
 quick-test: start test ## Quick test: start services and run tests
 quick-restart: stop start ## Quick restart: stop and start all services
 
+test-the166: ## Test THE-166 AI Explainer service
+	@echo "$(BLUE)Testing THE-166 AI Explainer service...$(NC)"
+	@if [ -f "tests/the166/test_explanation_generation.py" ]; then \
+		python -m pytest tests/the166/test_explanation_generation.py -v; \
+	else \
+		echo "$(YELLOW)No THE-166 tests found$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ THE-166 tests completed$(NC)"
+
 ## Development
 dev: ## Start development environment
 	@echo "$(BLUE)Starting development environment...$(NC)"
@@ -160,8 +174,11 @@ info: ## Show project information
 	@echo "  - Streamlit Dashboard ✓"
 	@echo "  - Anomaly Detector ✓"
 	@echo "  - Policy Engine ✓"
+	@echo "  - AI Explainer ✓"
 	@echo ""
 	@echo "$(BLUE)Documentation:$(NC)"
 	@echo "  - docs/Project_README.md"
 	@echo "  - docs/Architecture.md"
 	@echo "  - docs/Quickstart_Guide.md"
+
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer start stop restart status logs clean quick-start quick-test quick-restart test-the166 dev info test test-opcua test-gateway test-mqtt test-integration
