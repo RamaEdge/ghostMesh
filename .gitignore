@@ -96,6 +96,9 @@ node_modules/
 mosquitto/data/
 mosquitto/logs/
 
+# MQTT password file (contains sensitive credentials)
+mosquitto/passwd
+
 # Test data
 test-data/
 *.test.json

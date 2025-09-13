@@ -48,7 +48,7 @@ open http://<pi-ip>:8501   # Streamlit dashboard
    cd ghostmesh
    ```
 
-2. **Set up MQTT users:**
+2. **Set up MQTT users (generates password file with encrypted credentials):**
    ```bash
    ./scripts/setup-mqtt-users.sh
    ```
@@ -144,6 +144,13 @@ This script verifies:
 - Password-based authentication for all MQTT connections
 - No anonymous access allowed
 - Encrypted password storage
+- **Password file not included in repository** - generated locally by setup script
+
+### Credentials
+The MQTT password file (`mosquitto/passwd`) contains encrypted credentials and is:
+- Generated locally using `./scripts/setup-mqtt-users.sh`
+- Excluded from version control via `.gitignore`
+- Required for MQTT broker operation
 
 ### Access Control
 - Topic-based permissions using ACL

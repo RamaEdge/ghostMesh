@@ -1,0 +1,16 @@
+# GhostMesh MQTT User Password File Template
+# 
+# This is a template file. DO NOT use this file directly.
+# Run the setup script to generate the actual password file:
+# ./scripts/setup-mqtt-users.sh
+#
+# The generated mosquitto/passwd file will contain encrypted passwords
+# and should NOT be committed to version control.
+
+# Service users for GhostMesh components:
+# - iot (password: iotpass)
+# - gateway (password: gatewaypass)  
+# - detector (password: detectorpass)
+# - explainer (password: explainerpass)
+# - policy (password: policypass)
+# - dashboard (password: dashboardpass)
