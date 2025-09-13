@@ -28,35 +28,93 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for GhostMesh branding and styling
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
-        color: #1f77b4;
+        color: #2E86AB;
         text-align: center;
         margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    .ghostmesh-brand {
+        background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
     .metric-card {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
+        border-radius: 0.75rem;
+        border-left: 4px solid #2E86AB;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
     }
     .alert-card {
-        background-color: #fff2f2;
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #ff4444;
+        border-radius: 0.75rem;
+        border-left: 4px solid #E53E3E;
         margin: 0.5rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .success-card {
-        background-color: #f0fff4;
+        background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #00aa44;
+        border-radius: 0.75rem;
+        border-left: 4px solid #38A169;
         margin: 0.5rem 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .control-button {
+        background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .control-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .severity-high {
+        background-color: #FED7D7 !important;
+        color: #C53030 !important;
+        font-weight: bold;
+    }
+    .severity-medium {
+        background-color: #FEEBC8 !important;
+        color: #DD6B20 !important;
+        font-weight: bold;
+    }
+    .severity-low {
+        background-color: #C6F6D5 !important;
+        color: #2F855A !important;
+        font-weight: bold;
+    }
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    .status-connected {
+        background-color: #38A169;
+        box-shadow: 0 0 6px rgba(56, 161, 105, 0.6);
+    }
+    .status-disconnected {
+        background-color: #E53E3E;
+        box-shadow: 0 0 6px rgba(229, 62, 62, 0.6);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -66,8 +124,12 @@ if 'telemetry_data' not in st.session_state:
     st.session_state.telemetry_data = []
 if 'alerts_data' not in st.session_state:
     st.session_state.alerts_data = []
+if 'audit_data' not in st.session_state:
+    st.session_state.audit_data = []
 if 'mqtt_connected' not in st.session_state:
     st.session_state.mqtt_connected = False
+if 'mqtt_client' not in st.session_state:
+    st.session_state.mqtt_client = None
 
 class MQTTClient:
     def __init__(self):
@@ -102,17 +164,37 @@ class MQTTClient:
             
             # Store telemetry data
             if topic.startswith("factory/"):
+                # Parse topic: factory/<line>/<asset>/<signal>
+                topic_parts = topic.split('/')
+                if len(topic_parts) == 4:
+                    payload['line'] = topic_parts[1]
+                    payload['asset'] = topic_parts[2]
+                    payload['signal'] = topic_parts[3]
+                
                 st.session_state.telemetry_data.append(payload)
-                # Keep only last 100 data points
-                if len(st.session_state.telemetry_data) > 100:
-                    st.session_state.telemetry_data = st.session_state.telemetry_data[-100:]
+                # Keep only last 200 data points
+                if len(st.session_state.telemetry_data) > 200:
+                    st.session_state.telemetry_data = st.session_state.telemetry_data[-200:]
             
             # Store alerts data
             elif topic.startswith("alerts/"):
+                # Parse topic: alerts/<asset>/<signal>
+                topic_parts = topic.split('/')
+                if len(topic_parts) == 3:
+                    payload['asset'] = topic_parts[1]
+                    payload['signal'] = topic_parts[2]
+                
                 st.session_state.alerts_data.append(payload)
-                # Keep only last 50 alerts
-                if len(st.session_state.alerts_data) > 50:
-                    st.session_state.alerts_data = st.session_state.alerts_data[-50:]
+                # Keep only last 100 alerts
+                if len(st.session_state.alerts_data) > 100:
+                    st.session_state.alerts_data = st.session_state.alerts_data[-100:]
+            
+            # Store audit data
+            elif topic == "audit/actions":
+                st.session_state.audit_data.append(payload)
+                # Keep only last 50 audit events
+                if len(st.session_state.audit_data) > 50:
+                    st.session_state.audit_data = st.session_state.audit_data[-50:]
                     
         except Exception as e:
             st.error(f"Error processing MQTT message: {e}")
@@ -133,19 +215,52 @@ class MQTTClient:
     def disconnect(self):
         self.client.loop_stop()
         self.client.disconnect()
+    
+    def publish_control_command(self, asset_id, command, reason="operator_action", ref_alert_id=None):
+        """Publish a control command to the policy engine"""
+        try:
+            control_topic = f"control/{asset_id}/{command}"
+            control_payload = {
+                "assetId": asset_id,
+                "command": command,
+                "reason": reason,
+                "ts": datetime.now().isoformat()
+            }
+            
+            if ref_alert_id:
+                control_payload["refAlertId"] = ref_alert_id
+            
+            self.client.publish(control_topic, json.dumps(control_payload), qos=1)
+            return True
+        except Exception as e:
+            st.error(f"Failed to publish control command: {e}")
+            return False
 
 def create_telemetry_chart():
-    """Create telemetry chart placeholder using Plotly"""
+    """Create real-time telemetry chart using Plotly"""
     if not st.session_state.telemetry_data:
-        # Create sample data for demonstration
+        # Create sample data for demonstration when no real data is available
         sample_data = []
-        for i in range(20):
-            sample_data.append({
-                'timestamp': datetime.now() - timedelta(minutes=20-i),
-                'value': 25 + (i * 0.5) + (i % 3) * 2,
-                'asset': 'Press01',
-                'signal': 'Temperature'
-            })
+        assets = ['Press01', 'Press02', 'Conveyor01']
+        signals = ['Temperature', 'Pressure', 'Speed']
+        
+        for i in range(30):
+            for asset in assets:
+                for signal in signals:
+                    if signal == 'Temperature':
+                        value = 25 + (i * 0.3) + (i % 5) * 1.5
+                    elif signal == 'Pressure':
+                        value = 10 + (i * 0.2) + (i % 3) * 0.8
+                    else:  # Speed
+                        value = 50 + (i * 0.1) + (i % 4) * 2
+                    
+                    sample_data.append({
+                        'timestamp': datetime.now() - timedelta(minutes=30-i),
+                        'value': round(value, 2),
+                        'asset': asset,
+                        'signal': signal,
+                        'line': 'A'
+                    })
         
         df = pd.DataFrame(sample_data)
     else:
@@ -154,22 +269,47 @@ def create_telemetry_chart():
     if not df.empty:
         fig = go.Figure()
         
+        # Define colors for different assets
+        colors = {
+            'Press01': '#2E86AB',
+            'Press02': '#A23B72', 
+            'Conveyor01': '#F18F01'
+        }
+        
         # Group by asset and signal
         for (asset, signal), group in df.groupby(['asset', 'signal']):
+            color = colors.get(asset, '#666666')
             fig.add_trace(go.Scatter(
                 x=group['timestamp'],
                 y=group['value'],
                 mode='lines+markers',
                 name=f"{asset} - {signal}",
-                line=dict(width=2)
+                line=dict(width=2, color=color),
+                marker=dict(size=4, color=color),
+                hovertemplate=f"<b>{asset} - {signal}</b><br>" +
+                             "Time: %{x}<br>" +
+                             "Value: %{y}<br>" +
+                             "<extra></extra>"
             ))
         
         fig.update_layout(
-            title="Real-time Telemetry Data",
+            title=dict(
+                text="📊 Real-time Telemetry Data",
+                font=dict(size=20, color='#2E86AB')
+            ),
             xaxis_title="Time",
             yaxis_title="Value",
             hovermode='x unified',
-            height=400
+            height=450,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
         )
         
         return fig
@@ -177,16 +317,20 @@ def create_telemetry_chart():
         # Empty chart placeholder
         fig = go.Figure()
         fig.add_annotation(
-            text="No telemetry data available",
+            text="📡 No telemetry data available<br>Connect to MQTT broker to see live data",
             xref="paper", yref="paper",
             x=0.5, y=0.5, showarrow=False,
             font=dict(size=16, color="gray")
         )
-        fig.update_layout(height=400)
+        fig.update_layout(
+            height=450,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
         return fig
 
 def create_alerts_table():
-    """Create alerts table placeholder"""
+    """Create alerts table with real data and control buttons"""
     if not st.session_state.alerts_data:
         # Create sample alerts for demonstration
         sample_alerts = [
@@ -194,17 +338,19 @@ def create_alerts_table():
                 'timestamp': datetime.now() - timedelta(minutes=5),
                 'asset': 'Press01',
                 'signal': 'Temperature',
-                'severity': 'High',
-                'message': 'Temperature above normal threshold',
-                'value': 85.2
+                'severity': 'high',
+                'reason': 'z-score 8.4 vs mean 42.1±1.0 (120s)',
+                'current': 85.2,
+                'alertId': 'a-sample1'
             },
             {
                 'timestamp': datetime.now() - timedelta(minutes=12),
                 'asset': 'Conveyor01',
                 'signal': 'Speed',
-                'severity': 'Medium',
-                'message': 'Speed deviation detected',
-                'value': 45.8
+                'severity': 'medium',
+                'reason': 'z-score 5.2 vs mean 50.0±2.1 (120s)',
+                'current': 45.8,
+                'alertId': 'a-sample2'
             }
         ]
         df = pd.DataFrame(sample_alerts)
@@ -216,43 +362,105 @@ def create_alerts_table():
         display_df = df.copy()
         display_df['timestamp'] = display_df['timestamp'].dt.strftime('%H:%M:%S')
         
+        # Select columns for display
+        display_columns = ['timestamp', 'asset', 'signal', 'severity', 'current', 'reason']
+        if all(col in display_df.columns for col in display_columns):
+            display_df = display_df[display_columns]
+        
         # Color code severity
         def color_severity(val):
-            if val == 'High':
-                return 'background-color: #ffebee'
-            elif val == 'Medium':
-                return 'background-color: #fff3e0'
-            elif val == 'Low':
-                return 'background-color: #e8f5e8'
+            if val == 'high':
+                return 'background-color: #FED7D7; color: #C53030; font-weight: bold;'
+            elif val == 'medium':
+                return 'background-color: #FEEBC8; color: #DD6B20; font-weight: bold;'
+            elif val == 'low':
+                return 'background-color: #C6F6D5; color: #2F855A; font-weight: bold;'
             return ''
         
         styled_df = display_df.style.applymap(color_severity, subset=['severity'])
-        return styled_df
+        return styled_df, df
     else:
-        return pd.DataFrame({'Message': ['No alerts available']})
+        return pd.DataFrame({'Message': ['No alerts available']}), pd.DataFrame()
+
+def create_control_buttons(alert_data):
+    """Create control buttons for alerts"""
+    if alert_data.empty:
+        return
+    
+    st.subheader("🎛️ Control Actions")
+    
+    # Get unique assets with active alerts
+    assets_with_alerts = alert_data['asset'].unique()
+    
+    for asset in assets_with_alerts:
+        asset_alerts = alert_data[alert_data['asset'] == asset]
+        highest_severity = asset_alerts['severity'].max()
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button(f"🚫 Isolate {asset}", key=f"isolate_{asset}"):
+                if st.session_state.mqtt_client and st.session_state.mqtt_connected:
+                    success = st.session_state.mqtt_client.publish_control_command(
+                        asset, "isolate", "operator_action"
+                    )
+                    if success:
+                        st.success(f"✅ Isolation command sent for {asset}")
+                    else:
+                        st.error(f"❌ Failed to send isolation command for {asset}")
+                else:
+                    st.error("❌ MQTT not connected")
+        
+        with col2:
+            if st.button(f"⚡ Throttle {asset}", key=f"throttle_{asset}"):
+                if st.session_state.mqtt_client and st.session_state.mqtt_connected:
+                    success = st.session_state.mqtt_client.publish_control_command(
+                        asset, "throttle", "operator_action"
+                    )
+                    if success:
+                        st.success(f"✅ Throttle command sent for {asset}")
+                    else:
+                        st.error(f"❌ Failed to send throttle command for {asset}")
+                else:
+                    st.error("❌ MQTT not connected")
+        
+        with col3:
+            if st.button(f"✅ Unblock {asset}", key=f"unblock_{asset}"):
+                if st.session_state.mqtt_client and st.session_state.mqtt_connected:
+                    success = st.session_state.mqtt_client.publish_control_command(
+                        asset, "unblock", "operator_action"
+                    )
+                    if success:
+                        st.success(f"✅ Unblock command sent for {asset}")
+                    else:
+                        st.error(f"❌ Failed to send unblock command for {asset}")
+                else:
+                    st.error("❌ MQTT not connected")
 
 def main():
-    # Header
-    st.markdown('<h1 class="main-header">👻 GhostMesh Dashboard</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #666;">Edge AI Security Copilot - Real-time Industrial Monitoring</p>', unsafe_allow_html=True)
+    # Header with enhanced GhostMesh branding
+    st.markdown('<h1 class="main-header ghostmesh-brand">👻 GhostMesh Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #666; font-size: 1.1rem; margin-bottom: 2rem;">Edge AI Security Copilot - Real-time Industrial Monitoring & Control</p>', unsafe_allow_html=True)
     
     # Sidebar
     with st.sidebar:
         st.header("🔧 Control Panel")
         
         # MQTT Connection Status
-        st.subheader("Connection Status")
+        st.subheader("🔗 Connection Status")
         if st.session_state.mqtt_connected:
-            st.success("🟢 MQTT Connected")
+            st.markdown('<span class="status-indicator status-connected"></span>MQTT Connected', unsafe_allow_html=True)
+            st.success("🟢 Connected to GhostMesh MQTT Broker")
         else:
-            st.error("🔴 MQTT Disconnected")
+            st.markdown('<span class="status-indicator status-disconnected"></span>MQTT Disconnected', unsafe_allow_html=True)
+            st.error("🔴 Not connected to MQTT broker")
         
         # MQTT Connection Controls
-        st.subheader("MQTT Settings")
+        st.subheader("⚙️ MQTT Settings")
         mqtt_host = st.text_input("MQTT Host", value="localhost")
         mqtt_port = st.number_input("MQTT Port", value=1883, min_value=1, max_value=65535)
-        mqtt_username = st.text_input("Username", value="dashboard")
-        mqtt_password = st.text_input("Password", value="dashboard123", type="password")
+        mqtt_username = st.text_input("Username", value="iot")
+        mqtt_password = st.text_input("Password", value="iotpass", type="password")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -312,14 +520,18 @@ def main():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📊 Telemetry Charts")
+        st.subheader("📊 Real-time Telemetry Charts")
         fig = create_telemetry_chart()
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         st.subheader("🚨 Active Alerts")
-        alerts_df = create_alerts_table()
-        st.dataframe(alerts_df, use_container_width=True)
+        alerts_styled, alerts_data = create_alerts_table()
+        st.dataframe(alerts_styled, use_container_width=True)
+        
+        # Add control buttons for alerts
+        if not alerts_data.empty:
+            create_control_buttons(alerts_data)
     
     # Additional information
     st.subheader("📋 System Information")
@@ -342,13 +554,18 @@ def main():
         - MQTT Broker: ✅ Running
         - OPC UA Gateway: ✅ Connected
         - Mock OPC UA Server: ✅ Active
-        - Anomaly Detector: 🚧 Planned
-        - Policy Engine: 🚧 Planned
+        - Anomaly Detector: ✅ Operational
+        - Policy Engine: ✅ Operational
+        - Dashboard: ✅ Live
         """)
     
-    # Auto-refresh
+    # Auto-refresh with optimized rate (1-2 Hz)
     if st.session_state.mqtt_connected:
-        time.sleep(1)
+        time.sleep(0.5)  # 2 Hz refresh rate
+        st.rerun()
+    else:
+        # Slower refresh when not connected
+        time.sleep(2)
         st.rerun()
 
 if __name__ == "__main__":
