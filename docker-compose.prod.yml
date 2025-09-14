@@ -179,6 +179,43 @@ services:
           memory: 512M
           cpus: '0.5'
 
+  # Production: Optimized MQTT API backend
+  mqtt-api:
+    environment:
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USERNAME=api
+      - MQTT_PASSWORD=api_password
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=false
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - CORS_ORIGINS=https://ghostmesh.dev,https://dashboard.ghostmesh.dev
+      - API_KEY_REQUIRED=true
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=1000
+      - RATE_LIMIT_WINDOW=60
+      - MAX_HISTORY_SIZE=5000
+      - MESSAGE_RETENTION_HOURS=168  # 7 days
+      - WS_MAX_CONNECTIONS=500
+    ports:
+      - "8000:8000"  # Only production port
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
   # Production: Add monitoring service
   monitoring:
     image: prom/prometheus:latest

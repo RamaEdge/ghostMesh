@@ -101,6 +101,26 @@ services:
       - "8501:8501"
       - "8502:8502"  # Debug port
 
+  # Development: Enable debug mode and hot reload for MQTT API
+  mqtt-api:
+    environment:
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USERNAME=api
+      - MQTT_PASSWORD=api_password
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=true
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+      - CORS_ORIGINS=*
+      - RATE_LIMIT_ENABLED=false
+    volumes:
+      - ./mqtt-api:/app  # Mount source for development
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Debug port
+
   # Development: Add development tools
   dev-tools:
     image: python:3.11-slim
