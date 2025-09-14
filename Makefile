@@ -1,7 +1,7 @@
 # GhostMesh Makefile
 # Edge AI Security Copilot - Essential Commands
 
-.PHONY: help build build-dashboard build-anomaly build-policy build-explainer build-llm-server setup-hf-auth start stop test logs status clean setup validate-setup validate-runtime dev prod
+.PHONY: help build build-dashboard build-anomaly build-policy build-explainer build-llm-server build-mqtt-api setup-hf-auth start stop start-mqtt-api stop-mqtt-api restart-mqtt-api logs-mqtt-api status-mqtt-api example-mqtt-api test logs status clean setup validate-setup validate-runtime dev prod test-mqtt-api
 
 # Default target
 help: ## Show this help message
@@ -84,6 +84,11 @@ build-llm-server: setup-hf-auth ## Build LLM server container
 	$(COMPOSE_CMD) build llm-server
 	@echo "$(GREEN)✓ LLM server container built$(NC)"
 
+build-mqtt-api: ## Build MQTT API backend container
+	@echo "$(BLUE)Building MQTT API backend container...$(NC)"
+	cd mqtt-api && $(CONTAINER_RUNTIME) build -t ghostmesh-mqtt-api .
+	@echo "$(GREEN)✓ MQTT API backend container built$(NC)"
+
 ## Service Management
 start: ## Start all services
 	@echo "$(BLUE)Starting GhostMesh services...$(NC)"
@@ -103,6 +108,43 @@ restart: ## Restart all services
 	@echo "$(BLUE)Restarting GhostMesh services...$(NC)"
 	$(COMPOSE_CMD) restart
 	@echo "$(GREEN)✓ All services restarted$(NC)"
+
+start-mqtt-api: build-mqtt-api ## Start MQTT API backend service
+	@echo "$(BLUE)Starting MQTT API backend service...$(NC)"
+	cd mqtt-api && $(COMPOSE_CMD) up -d
+	@echo "$(GREEN)✓ MQTT API backend service started$(NC)"
+	@echo "$(YELLOW)API: http://localhost:8000$(NC)"
+	@echo "$(YELLOW)Docs: http://localhost:8000/docs$(NC)"
+	@echo "$(YELLOW)WebSocket: ws://localhost:8000/ws$(NC)"
+
+stop-mqtt-api: ## Stop MQTT API backend service
+	@echo "$(BLUE)Stopping MQTT API backend service...$(NC)"
+	cd mqtt-api && $(COMPOSE_CMD) down
+	@echo "$(GREEN)✓ MQTT API backend service stopped$(NC)"
+
+restart-mqtt-api: stop-mqtt-api start-mqtt-api ## Restart MQTT API backend service
+
+logs-mqtt-api: ## Show MQTT API backend service logs
+	@echo "$(BLUE)Showing MQTT API backend service logs...$(NC)"
+	cd mqtt-api && $(COMPOSE_CMD) logs -f
+
+status-mqtt-api: ## Show MQTT API backend service status
+	@echo "$(BLUE)MQTT API Backend Service Status$(NC)"
+	@echo "$(BLUE)==================================$(NC)"
+	cd mqtt-api && $(COMPOSE_CMD) ps
+	@echo ""
+	@echo "$(BLUE)API Health Check$(NC)"
+	@echo "$(BLUE)==================$(NC)"
+	@curl -s http://localhost:8000/health | python3 -m json.tool 2>/dev/null || echo "$(RED)API not responding$(NC)"
+
+example-mqtt-api: ## Run MQTT API example script
+	@echo "$(BLUE)Running MQTT API example script...$(NC)"
+	@if [ -f "mqtt-api/example.py" ]; then \
+		cd mqtt-api && python3 example.py; \
+	else \
+		echo "$(YELLOW)No example script found$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ MQTT API example completed$(NC)"
 
 ## Monitoring
 status: ## Show service status
@@ -132,6 +174,9 @@ test: ## Run all tests
 	@echo ""
 	@echo "$(BLUE)4. AI Explainer Tests$(NC)"
 	@make test-explainer
+	@echo ""
+	@echo "$(BLUE)5. MQTT API Backend Tests$(NC)"
+	@make test-mqtt-api
 	@echo ""
 	@echo "$(GREEN)✓ All tests completed$(NC)"
 
@@ -181,6 +226,15 @@ test-explainer: ## Test AI explainer service
 	fi
 	@echo "$(GREEN)✓ Explainer tests completed$(NC)"
 
+test-mqtt-api: ## Test MQTT API backend service
+	@echo "$(BLUE)Testing MQTT API backend service...$(NC)"
+	@if [ -f "mqtt-api/test_api.py" ]; then \
+		cd mqtt-api && python3 -m pytest test_api.py -v; \
+	else \
+		echo "$(YELLOW)No MQTT API tests found$(NC)"; \
+	fi
+	@echo "$(GREEN)✓ MQTT API tests completed$(NC)"
+
 ## Development
 dev: ## Start development environment
 	@echo "$(BLUE)Starting development environment...$(NC)"
@@ -208,6 +262,7 @@ info: ## Show project information
 	@echo "  - Policy Engine ✓"
 	@echo "  - AI Explainer (LLM) ✓"
 	@echo "  - LLM Server (llama.cpp) ✓"
+	@echo "  - MQTT API Backend ✓"
 	@echo ""
 	@echo "$(BLUE)Documentation:$(NC)"
 	@echo "  - docs/Project_README.md"
