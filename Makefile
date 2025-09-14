@@ -84,6 +84,11 @@ build-llm-server: setup-hf-auth ## Build LLM server container
 	$(COMPOSE_CMD) build llm-server
 	@echo "$(GREEN)✓ LLM server container built$(NC)"
 
+build-anomaly-injector: ## Build anomaly injector service container
+	@echo "$(BLUE)Building anomaly injector service container...$(NC)"
+	$(COMPOSE_CMD) build anomaly-injector
+	@echo "$(GREEN)✓ Anomaly injector service container built$(NC)"
+
 build-mqtt-api: ## Build MQTT API backend container
 	@echo "$(BLUE)Building MQTT API backend container...$(NC)"
 	cd mqtt-api && $(CONTAINER_RUNTIME) build -t ghostmesh-mqtt-api .
@@ -303,4 +308,4 @@ prod: ## Start production environment with monitoring
 	@echo "$(BLUE)MQTT API: http://localhost:8000$(NC)"
 	@echo "$(BLUE)Monitoring: http://localhost:9090$(NC)"
 
-.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration validate-setup validate-runtime prod
+.PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server build-anomaly-injector start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration validate-setup validate-runtime prod
