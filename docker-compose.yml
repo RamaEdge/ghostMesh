@@ -257,6 +257,58 @@ services:
     networks:
       - ghostmesh-network
 
+  # React Dashboard - Modern UI for GhostMesh
+  dashboard-ui:
+    image: ghostmesh-dashboard-lovable:latest
+    container_name: ghostmesh-dashboard-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      mqtt-api:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://ghostmesh-mqtt-api:8000
+      - VITE_WS_URL=ws://ghostmesh-mqtt-api:8000/ws
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '1.0'
+
+  # Anomaly Injector Service - Periodic testing
+  anomaly-injector:
+    build:
+      context: ./anomaly-injector
+      dockerfile: Dockerfile
+    container_name: ghostmesh-anomaly-injector
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=iotpass
+      - INJECTION_INTERVAL=60
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
 volumes:
   mosquitto_data:
     driver: local

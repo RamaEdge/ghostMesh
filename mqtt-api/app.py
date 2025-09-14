@@ -48,6 +48,7 @@ API_HOST = os.getenv('API_HOST', '0.0.0.0')
 # Global MQTT client
 mqtt_client: Optional[mqtt.Client] = None
 mqtt_connected = False
+mqtt_subscribed = False
 
 # Message storage for history
 message_history: List[Dict[str, Any]] = []
@@ -108,16 +109,18 @@ class HealthStatus(BaseModel):
 # MQTT event handlers
 def on_mqtt_connect(client, userdata, flags, rc):
     """Handle MQTT connection events"""
-    global mqtt_connected
+    global mqtt_connected, mqtt_subscribed
     logger.info(f"MQTT on_connect callback called with rc={rc}")
     if rc == 0:
         mqtt_connected = True
         logger.info("Connected to MQTT broker")
         # Subscribe to all topics to receive messages
         result = client.subscribe("#", qos=1)
+        mqtt_subscribed = True
         logger.info(f"Subscribed to all topics (#) with result: {result}")
     else:
         mqtt_connected = False
+        mqtt_subscribed = False
         logger.error(f"Failed to connect to MQTT broker: {rc}")
 
 def on_mqtt_disconnect(client, userdata, rc):
@@ -147,7 +150,17 @@ def on_mqtt_message(client, userdata, msg):
             message_history.pop(0)
         
         # Send to WebSocket connections
-        asyncio.create_task(broadcast_to_websockets(message_record))
+        # Use asyncio.run_coroutine_threadsafe to run async function from sync context
+        try:
+            loop = asyncio.get_running_loop()
+            future = asyncio.run_coroutine_threadsafe(broadcast_to_websockets(message_record), loop)
+            # Wait for the broadcast to complete (with timeout)
+            future.result(timeout=1.0)
+        except RuntimeError:
+            # No event loop running, skip WebSocket broadcast
+            pass
+        except Exception as e:
+            logger.warning(f"Failed to broadcast to WebSocket: {e}")
         
         logger.info(f"Received message on {msg.topic}: {payload[:100]}...")
         
@@ -157,10 +170,12 @@ def on_mqtt_message(client, userdata, msg):
 async def broadcast_to_websockets(message: Dict[str, Any]):
     """Broadcast message to all WebSocket connections"""
     if websocket_connections:
+        logger.info(f"📤 Broadcasting to {len(websocket_connections)} WebSocket connections: {message.get('topic', 'unknown')}")
         disconnected = []
         for websocket in websocket_connections:
             try:
                 await websocket.send_text(json.dumps(message))
+                logger.debug(f"📤 Sent message to WebSocket: {message.get('topic', 'unknown')}")
             except Exception as e:
                 logger.warning(f"Failed to send to WebSocket: {e}")
                 disconnected.append(websocket)
@@ -168,10 +183,12 @@ async def broadcast_to_websockets(message: Dict[str, Any]):
         # Remove disconnected WebSockets
         for ws in disconnected:
             websocket_connections.remove(ws)
+    else:
+        logger.debug("No WebSocket connections to broadcast to")
 
 def setup_mqtt_client():
     """Setup and connect MQTT client"""
-    global mqtt_client
+    global mqtt_client, mqtt_connected, mqtt_subscribed
     
     try:
         # Create MQTT client
@@ -186,6 +203,20 @@ def setup_mqtt_client():
         # Connect to broker
         mqtt_client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, 60)
         mqtt_client.loop_start()
+        
+        # Wait a moment for connection to establish
+        import time
+        time.sleep(1)
+        
+        # Manually subscribe if on_connect callback didn't work
+        if mqtt_connected and not mqtt_subscribed:
+            result = mqtt_client.subscribe("#", qos=1)
+            mqtt_subscribed = True
+            logger.info(f"Manual subscription to all topics (#) with result: {result}")
+        elif mqtt_subscribed:
+            logger.info("MQTT client already subscribed to all topics")
+        else:
+            logger.warning("MQTT client not connected, subscription will happen in on_connect callback")
         
         logger.info(f"MQTT client setup complete, connecting to {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT}")
         
@@ -241,7 +272,7 @@ async def health_check():
         mqtt_connected=mqtt_connected,
         uptime=uptime,
         message_count=len(message_history),
-        active_subscriptions=len(getattr(mqtt_client, '_subscriptions', {})) if mqtt_client else 0,
+        active_subscriptions=1 if mqtt_subscribed else 0,
         websocket_connections=len(websocket_connections)
     )
 
@@ -336,7 +367,13 @@ async def get_message_history(
         # Filter messages by topic if specified
         filtered_messages = message_history
         if topic:
-            filtered_messages = [msg for msg in message_history if msg["topic"] == topic]
+            if '*' in topic:
+                # Support wildcard patterns like "alerts/*"
+                import fnmatch
+                filtered_messages = [msg for msg in message_history if fnmatch.fnmatch(msg["topic"], topic)]
+            else:
+                # Exact topic match
+                filtered_messages = [msg for msg in message_history if msg["topic"] == topic]
         
         # Apply pagination
         start_idx = offset
@@ -407,32 +444,41 @@ async def get_statistics():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time message updates"""
-    await websocket.accept()
-    websocket_connections.append(websocket)
+    client_host = websocket.client.host if websocket.client else "unknown"
+    logger.info(f"🔌 WebSocket connection attempt from {client_host}")
     
     try:
+        await websocket.accept()
+        websocket_connections.append(websocket)
+        logger.info(f"✅ WebSocket connected from {client_host}. Total connections: {len(websocket_connections)}")
+        
         # Send welcome message
         await websocket.send_text(json.dumps({
             "type": "welcome",
             "message": "Connected to GhostMesh MQTT API",
             "timestamp": datetime.now().isoformat()
         }))
+        logger.info(f"📤 Sent welcome message to {client_host}")
         
         # Keep connection alive
         while True:
             try:
                 # Wait for client messages (ping/pong)
                 data = await websocket.receive_text()
+                logger.info(f"📨 Received from {client_host}: {data}")
                 if data == "ping":
                     await websocket.send_text(json.dumps({"type": "pong"}))
+                    logger.info(f"📤 Sent pong to {client_host}")
             except WebSocketDisconnect:
+                logger.info(f"🔌 WebSocket disconnected from {client_host}")
                 break
                 
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        logger.error(f"❌ WebSocket error from {client_host}: {e}")
     finally:
         if websocket in websocket_connections:
             websocket_connections.remove(websocket)
+        logger.info(f"🔌 WebSocket cleanup for {client_host}. Remaining connections: {len(websocket_connections)}")
 
 # Global variables
 start_time = time.time()
