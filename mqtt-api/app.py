@@ -237,7 +237,7 @@ async def health_check():
         mqtt_connected=mqtt_connected,
         uptime=uptime,
         message_count=len(message_history),
-        active_subscriptions=len(getattr(mqtt_client, '_subscriptions', {})) if mqtt_client else 0,
+        active_subscriptions=len(getattr(mqtt_client, '_subscriptions', {})) if mqtt_client else 0,  # Fixed: use getattr for compatibility
         websocket_connections=len(websocket_connections)
     )
 
@@ -442,3 +442,4 @@ if __name__ == "__main__":
         reload=False,
         log_level="info"
     )
+# Cache buster: Sun Sep 14 10:24:04 CEST 2025
