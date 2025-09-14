@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  mqtt-api:
+    build: .
+    container_name: ghostmesh-mqtt-api
+    ports:
+      - "8000:8000"
+    environment:
+      # MQTT Broker Configuration
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - MQTT_USERNAME=api
+      - MQTT_PASSWORD=api_password
+      - MQTT_KEEPALIVE=60
+      - MQTT_CLEAN_SESSION=true
+      
+      # API Server Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_WORKERS=1
+      - API_RELOAD=false
+      
+      # Message Storage Configuration
+      - MAX_HISTORY_SIZE=1000
+      - MESSAGE_RETENTION_HOURS=24
+      
+      # WebSocket Configuration
+      - WS_HEARTBEAT_INTERVAL=30
+      - WS_MAX_CONNECTIONS=100
+      
+      # Security Configuration
+      - CORS_ORIGINS=*
+      - API_KEY_REQUIRED=false
+      
+      # Logging Configuration
+      - LOG_LEVEL=INFO
+      
+      # Health Check Configuration
+      - HEALTH_CHECK_INTERVAL=30
+      - HEALTH_CHECK_TIMEOUT=10
+      
+      # Rate Limiting Configuration
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=60
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ghostmesh-network
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: ghostmesh-mosquitto-api
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./passwd:/mosquitto/config/passwd:ro
+      - ./acl.conf:/mosquitto/config/acl.conf:ro
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-logs:/mosquitto/log
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+
+  # Optional: Redis for message persistence
+  redis:
+    image: redis:7-alpine
+    container_name: ghostmesh-redis-api
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+    command: redis-server --appendonly yes
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ghostmesh-prometheus-api
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Optional: Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ghostmesh-grafana-api
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - ghostmesh-network
+
+volumes:
+  mosquitto-data:
+  mosquitto-logs:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  ghostmesh-network:
+    driver: bridge
