@@ -207,6 +207,56 @@ services:
     networks:
       - ghostmesh-network
 
+  # MQTT API Backend Service - Implemented in THE-80
+  mqtt-api:
+    build: ./mqtt-api
+    container_name: ghostmesh-mqtt-api
+    ports:
+      - "8000:8000"
+    depends_on:
+      mosquitto:
+        condition: service_started
+    environment:
+      - MQTT_BROKER_HOST=${MQTT_HOST:-mosquitto}
+      - MQTT_BROKER_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME_API:-api}
+      - MQTT_PASSWORD=${MQTT_PASSWORD_API:-api_password}
+      - MQTT_KEEPALIVE=${MQTT_KEEPALIVE:-60}
+      - MQTT_CLEAN_SESSION=${MQTT_CLEAN_SESSION:-true}
+      - API_HOST=${API_HOST:-0.0.0.0}
+      - API_PORT=${API_PORT:-8000}
+      - API_WORKERS=${API_WORKERS:-1}
+      - API_RELOAD=${API_RELOAD:-false}
+      - MAX_HISTORY_SIZE=${MAX_HISTORY_SIZE:-1000}
+      - MESSAGE_RETENTION_HOURS=${MESSAGE_RETENTION_HOURS:-24}
+      - WS_HEARTBEAT_INTERVAL=${WS_HEARTBEAT_INTERVAL:-30}
+      - WS_MAX_CONNECTIONS=${WS_MAX_CONNECTIONS:-100}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - API_KEY_REQUIRED=${API_KEY_REQUIRED:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - HEALTH_CHECK_INTERVAL=${HEALTH_CHECK_INTERVAL:-30}
+      - HEALTH_CHECK_TIMEOUT=${HEALTH_CHECK_TIMEOUT:-10}
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${RATE_LIMIT_WINDOW:-60}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    networks:
+      - ghostmesh-network
+
 volumes:
   mosquitto_data:
     driver: local
