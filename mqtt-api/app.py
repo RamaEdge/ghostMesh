@@ -109,12 +109,13 @@ class HealthStatus(BaseModel):
 def on_mqtt_connect(client, userdata, flags, rc):
     """Handle MQTT connection events"""
     global mqtt_connected
+    logger.info(f"MQTT on_connect callback called with rc={rc}")
     if rc == 0:
         mqtt_connected = True
         logger.info("Connected to MQTT broker")
         # Subscribe to all topics to receive messages
-        client.subscribe("#", qos=1)
-        logger.info("Subscribed to all topics (#)")
+        result = client.subscribe("#", qos=1)
+        logger.info(f"Subscribed to all topics (#) with result: {result}")
     else:
         mqtt_connected = False
         logger.error(f"Failed to connect to MQTT broker: {rc}")
