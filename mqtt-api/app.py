@@ -112,6 +112,9 @@ def on_mqtt_connect(client, userdata, flags, rc):
     if rc == 0:
         mqtt_connected = True
         logger.info("Connected to MQTT broker")
+        # Subscribe to all topics to receive messages
+        client.subscribe("#", qos=1)
+        logger.info("Subscribed to all topics (#)")
     else:
         mqtt_connected = False
         logger.error(f"Failed to connect to MQTT broker: {rc}")
