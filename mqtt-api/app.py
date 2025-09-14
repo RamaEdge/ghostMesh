@@ -52,7 +52,10 @@ mqtt_subscribed = False
 
 # Message storage for history
 message_history: List[Dict[str, Any]] = []
-MAX_HISTORY_SIZE = 1000
+MAX_HISTORY_SIZE = 10000
+
+# Separate alert storage to ensure alerts are never lost
+alert_storage: Dict[str, Dict[str, Any]] = {}
 
 # WebSocket connections for real-time updates
 websocket_connections: List[WebSocket] = []
@@ -148,6 +151,16 @@ def on_mqtt_message(client, userdata, msg):
         message_history.append(message_record)
         if len(message_history) > MAX_HISTORY_SIZE:
             message_history.pop(0)
+        
+        # Store alerts separately to ensure they're never lost
+        if msg.topic.startswith("alerts/"):
+            try:
+                payload = json.loads(msg.payload)
+                alert_id = payload.get("alertId")
+                if alert_id:
+                    alert_storage[alert_id] = message_record
+            except json.JSONDecodeError:
+                pass
         
         # Send to WebSocket connections
         # Use asyncio.run_coroutine_threadsafe to run async function from sync context
@@ -405,6 +418,74 @@ async def get_active_topics():
         return sorted(topics)
     except Exception as e:
         logger.error(f"Error retrieving topics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/explain/{alert_id}")
+async def trigger_explanation(alert_id: str):
+    """Trigger AI explanation generation for a specific alert"""
+    try:
+        # For demo purposes, return mock explanation data
+        mock_explanations = {
+            "a-073f1084": {
+                "alertId": alert_id,
+                "confidence": 0.92,
+                "reason": "Temperature reading of 85.3°C is significantly above normal operating range (45-65°C). This indicates potential overheating due to mechanical stress or cooling system failure.",
+                "recommendations": [
+                    "Check cooling system operation",
+                    "Inspect for mechanical binding",
+                    "Monitor temperature trends",
+                    "Consider reducing load if possible"
+                ],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            },
+            "a-cc8789e3": {
+                "alertId": alert_id,
+                "confidence": 0.88,
+                "reason": "Vibration level of 12.4 mm/s exceeds normal threshold (8 mm/s). This suggests bearing wear, misalignment, or mechanical imbalance.",
+                "recommendations": [
+                    "Schedule bearing inspection",
+                    "Check alignment of rotating components",
+                    "Monitor vibration trends",
+                    "Consider vibration analysis"
+                ],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            },
+            "a-ef75a5d6": {
+                "alertId": alert_id,
+                "confidence": 0.95,
+                "reason": "Pressure reading of 15.2 bar is dangerously high compared to normal operating pressure (8-12 bar). This indicates potential system overpressure.",
+                "recommendations": [
+                    "Immediately check pressure relief valves",
+                    "Verify pressure regulator settings",
+                    "Inspect for blockages in system",
+                    "Consider emergency shutdown procedures"
+                ],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        }
+        
+        # Return mock explanation if available, otherwise generate a generic one
+        if alert_id in mock_explanations:
+            explanation = mock_explanations[alert_id]
+        else:
+            explanation = {
+                "alertId": alert_id,
+                "confidence": 0.85,
+                "reason": f"Anomaly detected in system parameters for alert {alert_id}. The system has identified unusual patterns that require attention.",
+                "recommendations": [
+                    "Review system logs",
+                    "Check equipment status",
+                    "Monitor for additional anomalies",
+                    "Contact maintenance if needed"
+                ],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+        logger.info(f"Returned explanation for alert {alert_id}")
+        return explanation
+        
+    except Exception as e:
+        logger.error(f"Error generating explanation for alert {alert_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/stats", response_model=Dict[str, Any])
