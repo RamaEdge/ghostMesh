@@ -291,6 +291,7 @@ dev: ## Start development environment with debug logging
 	@echo "$(GREEN)✓ Development environment started$(NC)"
 	@echo "$(BLUE)Dashboard: http://localhost:8501$(NC)"
 	@echo "$(BLUE)LLM Server: http://localhost:8080$(NC)"
+	@echo "$(BLUE)MQTT API: http://localhost:8000$(NC)"
 
 prod: ## Start production environment with monitoring
 	@echo "$(BLUE)Starting GhostMesh production environment...$(NC)"
@@ -299,6 +300,7 @@ prod: ## Start production environment with monitoring
 	@echo "$(GREEN)✓ Production environment started$(NC)"
 	@echo "$(BLUE)Dashboard: http://localhost:8501$(NC)"
 	@echo "$(BLUE)LLM Server: http://localhost:8080$(NC)"
+	@echo "$(BLUE)MQTT API: http://localhost:8000$(NC)"
 	@echo "$(BLUE)Monitoring: http://localhost:9090$(NC)"
 
 .PHONY: help setup build build-mock-opcua build-gateway build-dashboard build-anomaly build-policy build-explainer build-llm-server start stop restart status logs clean quick-start quick-test quick-restart test-anomaly test-explainer dev info test test-opcua test-gateway test-mqtt test-integration validate-setup validate-runtime prod
