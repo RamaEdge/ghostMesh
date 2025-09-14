@@ -98,6 +98,7 @@ start: ## Start all services
 	@echo "$(YELLOW)MQTT: localhost:$(MQTT_PORT)$(NC)"
 	@echo "$(YELLOW)Mock OPC UA: localhost:4840$(NC)"
 	@echo "$(YELLOW)LLM Server: http://localhost:8080$(NC)"
+	@echo "$(YELLOW)MQTT API: http://localhost:8000$(NC)"
 
 stop: ## Stop all services
 	@echo "$(BLUE)Stopping GhostMesh services...$(NC)"
@@ -111,7 +112,7 @@ restart: ## Restart all services
 
 start-mqtt-api: build-mqtt-api ## Start MQTT API backend service
 	@echo "$(BLUE)Starting MQTT API backend service...$(NC)"
-	cd mqtt-api && $(COMPOSE_CMD) up -d
+	$(COMPOSE_CMD) up -d mqtt-api
 	@echo "$(GREEN)✓ MQTT API backend service started$(NC)"
 	@echo "$(YELLOW)API: http://localhost:8000$(NC)"
 	@echo "$(YELLOW)Docs: http://localhost:8000/docs$(NC)"
@@ -119,19 +120,19 @@ start-mqtt-api: build-mqtt-api ## Start MQTT API backend service
 
 stop-mqtt-api: ## Stop MQTT API backend service
 	@echo "$(BLUE)Stopping MQTT API backend service...$(NC)"
-	cd mqtt-api && $(COMPOSE_CMD) down
+	$(COMPOSE_CMD) stop mqtt-api
 	@echo "$(GREEN)✓ MQTT API backend service stopped$(NC)"
 
 restart-mqtt-api: stop-mqtt-api start-mqtt-api ## Restart MQTT API backend service
 
 logs-mqtt-api: ## Show MQTT API backend service logs
 	@echo "$(BLUE)Showing MQTT API backend service logs...$(NC)"
-	cd mqtt-api && $(COMPOSE_CMD) logs -f
+	$(COMPOSE_CMD) logs -f mqtt-api
 
 status-mqtt-api: ## Show MQTT API backend service status
 	@echo "$(BLUE)MQTT API Backend Service Status$(NC)"
 	@echo "$(BLUE)==================================$(NC)"
-	cd mqtt-api && $(COMPOSE_CMD) ps
+	$(COMPOSE_CMD) ps mqtt-api
 	@echo ""
 	@echo "$(BLUE)API Health Check$(NC)"
 	@echo "$(BLUE)==================$(NC)"
