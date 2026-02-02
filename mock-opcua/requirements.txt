@@ -1,4 +1,4 @@
-asyncua==1.0.5
-asyncio-mqtt==0.16.1
-pydantic==2.5.0
-PyYAML==6.0.1
+asyncua==1.1.8
+asyncio-mqtt==0.16.2
+pydantic==2.12.5
+PyYAML==6.0.3
