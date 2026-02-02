@@ -123,7 +123,7 @@ services:
 
   # Development: Add development tools
   dev-tools:
-    image: python:3.11-slim
+    image: python:3.14-slim
     container_name: ghostmesh-dev-tools
     volumes:
       - .:/workspace
