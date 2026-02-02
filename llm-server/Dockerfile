@@ -2,7 +2,7 @@
 # Multi-stage build for llama.cpp server with local LLM inference
 
 # Build stage - includes build tools and downloads model
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:24.04 AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -54,7 +54,7 @@ RUN if [ -f /app/.hf_token ]; then \
     fi
 
 # Runtime stage - minimal image without build tools or tokens
-FROM ubuntu:22.04 AS runtime
+FROM ubuntu:24.04 AS runtime
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y \
