@@ -1,7 +1,7 @@
 # GhostMesh AI Explainer Service Dockerfile
 # Multi-stage build for minimal image size and security
 
-FROM python:3.11-slim as builder
+FROM python:3.14-slim as builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
